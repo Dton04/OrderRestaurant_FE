@@ -1,5 +1,10 @@
 import axios from 'axios';
-import type { AuthResponse, LoginRequest, RegisterRequest } from '../types/auth';
+import type {
+  AuthResponse,
+  LoginRequest,
+  RegisterRequest,
+  RegisterResponse,
+} from '../types/auth';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
@@ -15,8 +20,8 @@ export const authApi = {
     const response = await api.post<AuthResponse>('/auth/login', data);
     return response.data;
   },
-  register: async (data: RegisterRequest): Promise<AuthResponse> => {
-    const response = await api.post<AuthResponse>('/auth/register', data);
+  register: async (data: RegisterRequest): Promise<RegisterResponse> => {
+    const response = await api.post<RegisterResponse>('/auth/register', data);
     return response.data;
   },
 };
