@@ -26,7 +26,7 @@ const LoginPage: React.FC = () => {
       localStorage.setItem('token', response.access_token);
       localStorage.setItem('refresh_token', response.refresh_token);
       localStorage.setItem('user', JSON.stringify(response.user));
-      navigate('/');
+      navigate('/admin/users');
     } catch (err: unknown) {
       console.error('Login error:', err);
       if (axios.isAxiosError(err)) {

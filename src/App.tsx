@@ -1,6 +1,12 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
+import AdminUsersPage from './pages/AdminUsersPage';
+
+const getDefaultRoute = () => {
+  const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+  return token ? '/admin/users' : '/login';
+};
 
 function App() {
   return (
@@ -8,13 +14,13 @@ function App() {
       <Routes>
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
-        {/* Redirect empty path to login for now */}
-        <Route path="/" element={<Navigate to="/login" replace />} />
-        {/* Fallback to login */}
-        <Route path="*" element={<Navigate to="/login" replace />} />
+        <Route path="/admin/users" element={<AdminUsersPage />} />
+        <Route path="/" element={<Navigate to={getDefaultRoute()} replace />} />
+        <Route path="*" element={<Navigate to={getDefaultRoute()} replace />} />
       </Routes>
     </Router>
   );
 }
+
 
 export default App;
