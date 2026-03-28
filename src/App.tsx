@@ -7,37 +7,29 @@ import {
 } from 'react-router-dom';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
-import HomePage from './pages/HomePage';
+import AdminUsersPage from './pages/AdminUsersPage';
 
-function RequireAuth({ children }: { children: React.ReactNode }) {
-  const location = useLocation();
-  const token = localStorage.getItem('token');
-
-  if (!token) {
-    return <Navigate to="/login" replace state={{ from: location }} />;
-  }
-
-  return <>{children}</>;
-}
+const getDefaultRoute = () => {
+  const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+  return token ? '/admin/users' : '/login';
+};
 
 function App() {
   return (
     <Router>
       <Routes>
+        <Route path="/" element={<Navigate to="/admin/dashboard" replace />} />
+        
+        {/* Public Routes */}
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
-        <Route
-          path="/"
-          element={
-            <RequireAuth>
-              <HomePage />
-            </RequireAuth>
-          }
-        />
-        <Route path="*" element={<Navigate to="/" replace />} />
+        <Route path="/admin/users" element={<AdminUsersPage />} />
+        <Route path="/" element={<Navigate to={getDefaultRoute()} replace />} />
+        <Route path="*" element={<Navigate to={getDefaultRoute()} replace />} />
       </Routes>
     </Router>
   );
 }
+
 
 export default App;
