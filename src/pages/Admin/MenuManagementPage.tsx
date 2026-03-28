@@ -15,12 +15,17 @@ import { dishApi } from '../../api/dish';
 import { categoryApi } from '../../api/category';
 import type { Dish } from '../../types/dish';
 import type { Category } from '../../types/category';
+import DishModal from '../../components/Admin/DishModal';
 
 const MenuManagementPage: React.FC = () => {
   const [dishes, setDishes] = useState<Dish[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Modal State
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedDish, setSelectedDish] = useState<Dish | null>(null);
 
   const fetchMenuData = async () => {
     try {
@@ -48,6 +53,27 @@ const MenuManagementPage: React.FC = () => {
     return categories.find(c => c.id === id)?.name || `ID: ${id}`;
   };
 
+  const handleAddDish = () => {
+    setSelectedDish(null);
+    setIsModalOpen(true);
+  };
+
+  const handleEditDish = (dish: Dish) => {
+    setSelectedDish(dish);
+    setIsModalOpen(true);
+  };
+
+  const handleDeleteDish = async (id: number) => {
+    if (!window.confirm('Bạn có chắc chắn muốn xóa món ăn này không?')) return;
+    try {
+      await dishApi.remove(id);
+      fetchMenuData(); // Refresh list
+    } catch (err) {
+      console.error('Failed to delete dish:', err);
+      alert('Không thể xóa món ăn. Vui lòng thử lại.');
+    }
+  };
+
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('vi-VN').format(price);
   };
@@ -56,15 +82,18 @@ const MenuManagementPage: React.FC = () => {
     <div className="space-y-6 animate-in slide-in-from-bottom-3 duration-500 text-sm">
       <div className="flex justify-between items-end">
         <div>
-          <nav className="flex gap-1.5 text-[10px] font-black text-gray-400 mb-1 uppercase tracking-tighter">
+          <nav className="flex gap-1.5 text-[10px] font-bold text-gray-400 mb-1 uppercase tracking-wider">
             <span>Quản trị</span>
             <span>›</span>
             <span className="text-orange-600">Thực đơn</span>
           </nav>
-          <h2 className="text-2xl font-black text-gray-800 tracking-tight">Quản lý Thực đơn</h2>
-          <p className="text-gray-400 text-xs mt-0.5 opacity-80">Danh sách món ăn và trạng thái phục vụ.</p>
+          <h2 className="text-2xl font-extrabold text-gray-800 tracking-tight font-heading">Quản lý Thực đơn</h2>
+          <p className="text-gray-400 text-xs mt-0.5 opacity-80 font-medium tracking-tight">Danh sách món ăn và trạng thái phục vụ.</p>
         </div>
-        <button className="flex items-center gap-2 bg-orange-700 text-white px-5 py-2.5 rounded-xl font-bold hover:bg-orange-800 transition-all shadow-md shadow-orange-100 text-xs">
+        <button 
+          onClick={handleAddDish}
+          className="flex items-center gap-2 bg-orange-700 text-white px-5 py-2.5 rounded-xl font-bold hover:bg-orange-800 transition-all shadow-md shadow-orange-100 text-xs"
+        >
           <Plus size={16} />
           Thêm món mới
         </button>
@@ -100,14 +129,14 @@ const MenuManagementPage: React.FC = () => {
         {loading ? (
           <div className="flex flex-col items-center justify-center py-20 gap-3 text-gray-400">
             <Loader2 className="animate-spin text-orange-600" size={32} />
-            <p className="text-xs font-black uppercase tracking-widest">Đang tải món ăn...</p>
+            <p className="text-xs font-bold uppercase tracking-widest">Đang tải món ăn...</p>
           </div>
         ) : error ? (
           <div className="p-8 bg-red-50 rounded-2xl border border-red-100 text-center space-y-3">
             <p className="text-red-600 font-bold">{error}</p>
             <button 
               onClick={fetchMenuData}
-              className="px-6 py-2 bg-white border border-red-100 rounded-xl text-[10px] font-black uppercase text-red-600 hover:bg-red-100 transition-colors"
+              className="px-6 py-2 bg-white border border-red-100 rounded-xl text-[10px] font-bold uppercase text-red-600 hover:bg-red-100 transition-colors"
             >
               Thử lại
             </button>
@@ -116,7 +145,7 @@ const MenuManagementPage: React.FC = () => {
           <div className="overflow-x-auto">
             <table className="w-full text-left">
               <thead>
-                <tr className="text-[9px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-50">
+                <tr className="text-[9px] font-bold text-gray-400 uppercase tracking-widest border-b border-gray-50">
                   <th className="pb-4">Hình ảnh</th>
                   <th className="pb-4">Tên món</th>
                   <th className="pb-4">Danh mục</th>
@@ -138,17 +167,17 @@ const MenuManagementPage: React.FC = () => {
                       )}
                     </td>
                     <td className="py-3">
-                      <p className="font-black text-gray-800">{dish.name}</p>
+                      <p className="font-bold text-gray-800 tracking-tight">{dish.name}</p>
                       <p className="text-[9px] text-gray-400 mt-0.5 font-bold tracking-tight">ID: MENU-{dish.id.toString().padStart(3, '0')}</p>
                     </td>
-                    <td className="py-3 font-bold">
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-orange-50 text-orange-700 text-[9px] font-black uppercase">
+                    <td className="py-3 font-semibold">
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-orange-50 text-orange-700 text-[9px] font-bold uppercase tracking-tight">
                         {getCategoryName(dish.category_id as number)}
                       </span>
                     </td>
-                    <td className="py-3 font-black text-gray-700">{formatPrice(dish.price)}</td>
+                    <td className="py-3 font-bold text-gray-700 tracking-tight">{formatPrice(dish.price)}</td>
                     <td className="py-3">
-                      <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[9px] font-black tracking-tight ${
+                      <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[9px] font-bold tracking-tight ${
                         dish.is_available !== false ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'
                       }`}>
                         <div className={`w-1 h-1 rounded-full ${dish.is_available !== false ? 'bg-green-500' : 'bg-red-500'}`}></div>
@@ -156,11 +185,17 @@ const MenuManagementPage: React.FC = () => {
                       </span>
                     </td>
                     <td className="py-3 text-right">
-                      <div className="flex justify-end gap-1">
-                        <button className="p-1.5 text-gray-400 hover:text-orange-600 hover:bg-orange-50 rounded-lg transition-all">
+                      <div className="flex gap-2 justify-end">
+                        <button 
+                          onClick={() => handleEditDish(dish)}
+                          className="p-1.5 hover:bg-orange-50 rounded-lg transition-colors text-orange-600"
+                        >
                           <Edit2 size={14} />
                         </button>
-                        <button className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all">
+                        <button 
+                          onClick={() => handleDeleteDish(dish.id)}
+                          className="p-1.5 hover:bg-red-50 rounded-lg transition-colors text-red-600"
+                        >
                           <Trash2 size={14} />
                         </button>
                       </div>
@@ -171,6 +206,14 @@ const MenuManagementPage: React.FC = () => {
             </table>
           </div>
         )}
+
+        <DishModal 
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+          onSuccess={fetchMenuData}
+          dish={selectedDish}
+          categories={categories}
+        />
 
         <div className="flex justify-between items-center pt-5 border-t border-gray-50 text-[10px] font-bold">
           <p className="text-gray-400">Hiển thị <span className="text-gray-700">1-{dishes.length}</span> / <span className="text-gray-700">{dishes.length}</span> món</p>
