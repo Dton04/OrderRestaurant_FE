@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Mail, Lock, Eye, EyeOff, ShieldCheck } from 'lucide-react';
 import AuthLayout from '../components/auth/AuthLayout';
 import { authApi } from '../api/auth';
+import axios from 'axios';
 
 const LoginPage: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -23,11 +24,25 @@ const LoginPage: React.FC = () => {
       const response = await authApi.login({ email, password });
       console.log('Login success:', response);
       localStorage.setItem('token', response.access_token);
+      localStorage.setItem('refresh_token', response.refresh_token);
       localStorage.setItem('user', JSON.stringify(response.user));
       navigate('/');
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Login error:', err);
-      setError(err.response?.data?.message || 'Đăng nhập thất bại. Vui lòng kiểm tra lại thông tin.');
+      if (axios.isAxiosError(err)) {
+        const data: unknown = err.response?.data;
+        const message =
+          data && typeof data === 'object' && 'message' in data
+            ? (data as Record<string, unknown>).message
+            : undefined;
+        setError(
+          typeof message === 'string'
+            ? message
+            : 'Đăng nhập thất bại. Vui lòng kiểm tra lại thông tin.',
+        );
+      } else {
+        setError('Đăng nhập thất bại. Vui lòng kiểm tra lại thông tin.');
+      }
     } finally {
       setLoading(false);
     }
