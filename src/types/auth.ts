@@ -18,16 +18,16 @@ export interface LoginRequest {
   password?: string;
 }
 
-export interface RegisterResponse {
-  id: string;
-  full_name: string;
-  email: string;
-  role: string;
-}
-
 export interface RegisterRequest {
   full_name: string;
   email: string;
   password?: string;
   phone: string;
+}
+
+export interface RegisterResponse {
+  id: string;
+  full_name: string;
+  email: string;
+  role: string;
 }
