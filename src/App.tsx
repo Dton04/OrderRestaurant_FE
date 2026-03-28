@@ -7,26 +7,12 @@ import {
 } from 'react-router-dom';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
-import HomePage from './pages/HomePage';
+import AdminUsersPage from './pages/AdminUsersPage';
 
-function RequireAuth({ children }: { children: React.ReactNode }) {
-  const location = useLocation();
-  const token = localStorage.getItem('token');
-
-  if (!token) {
-    return <Navigate to="/login" replace state={{ from: location }} />;
-  }
-
-  return <>{children}</>;
-}
-
-import { MainLayout } from './components/Layout/MainLayout';
-import AdminLayout from './components/Admin/Layout';
-import DashboardPage from './pages/Admin/DashboardPage';
-import MenuManagementPage from './pages/Admin/MenuManagementPage';
-import CategoryManagementPage from './pages/Admin/CategoryManagementPage';
-import TableManagementPage from './pages/Admin/TableManagementPage';
-
+const getDefaultRoute = () => {
+  const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+  return token ? '/admin/users' : '/login';
+};
 
 function App() {
   return (
@@ -37,27 +23,13 @@ function App() {
         {/* Public Routes */}
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
-        
-        {/* Admin Routes */}
-        <Route path="/admin" element={<AdminLayout />}>
-          <Route index element={<Navigate to="dashboard" replace />} />
-          <Route path="dashboard" element={<DashboardPage />} />
-          <Route path="menu" element={<MenuManagementPage />} />
-          <Route path="categories" element={<CategoryManagementPage />} />
-          <Route path="tables" element={<TableManagementPage />} />
-          {/* Placeholders for other admin pages */}
-          <Route path="orders" element={<div className="p-8 text-center text-gray-400">Order Management Coming Soon</div>} />
-          <Route path="staff" element={<div className="p-8 text-center text-gray-400">Staff Management Coming Soon</div>} />
-        </Route>
-
-        <Route element={<MainLayout />}>
-          <Route path="/home" element={<div>Home Page Content</div>} />
-        </Route>
-
-        <Route path="*" element={<Navigate to="/admin/dashboard" replace />} />
+        <Route path="/admin/users" element={<AdminUsersPage />} />
+        <Route path="/" element={<Navigate to={getDefaultRoute()} replace />} />
+        <Route path="*" element={<Navigate to={getDefaultRoute()} replace />} />
       </Routes>
     </Router>
   );
 }
+
 
 export default App;
