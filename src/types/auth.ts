@@ -31,3 +31,10 @@ export interface RegisterRequest {
   password?: string;
   phone: string;
 }
+
+export interface RegisterResponse {
+  id: string;
+  full_name: string;
+  email: string;
+  role: string;
+}
