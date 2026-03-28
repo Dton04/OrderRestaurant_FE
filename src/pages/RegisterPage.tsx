@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { User, Mail, Phone, Lock, Eye, EyeOff, Briefcase, ChevronDown } from 'lucide-react';
+import { User, Mail, Phone, Lock, Eye, EyeOff } from 'lucide-react';
 import AuthLayout from '../components/auth/AuthLayout';
 import { authApi } from '../api/auth';
+import axios from 'axios';
 
 const RegisterPage: React.FC = () => {
   const [formData, setFormData] = useState({
@@ -11,7 +12,6 @@ const RegisterPage: React.FC = () => {
     phone: '',
     password: '',
     confirmPassword: '',
-    role: 'customer'
   });
   const [showPassword, setShowPassword] = useState(false);
   const [agreeTerms, setAgreeTerms] = useState(false);
@@ -20,7 +20,7 @@ const RegisterPage: React.FC = () => {
 
   const navigate = useNavigate();
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
   };
@@ -41,14 +41,32 @@ const RegisterPage: React.FC = () => {
 
     setLoading(true);
     try {
-      const { confirmPassword, ...registerData } = formData;
+      const registerData = {
+        full_name: formData.full_name,
+        email: formData.email,
+        phone: formData.phone,
+        password: formData.password,
+      };
       const response = await authApi.register(registerData);
       console.log('Register success:', response);
       // Auto login after register? Let's navigate to login for now
       navigate('/login');
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Register error:', err);
-      setError(err.response?.data?.message || 'Đăng ký thất bại. Vui lòng thử lại.');
+      if (axios.isAxiosError(err)) {
+        const data: unknown = err.response?.data;
+        const message =
+          data && typeof data === 'object' && 'message' in data
+            ? (data as Record<string, unknown>).message
+            : undefined;
+        setError(
+          typeof message === 'string'
+            ? message
+            : 'Đăng ký thất bại. Vui lòng thử lại.',
+        );
+      } else {
+        setError('Đăng ký thất bại. Vui lòng thử lại.');
+      }
     } finally {
       setLoading(false);
     }
@@ -119,28 +137,6 @@ const RegisterPage: React.FC = () => {
                   className="block w-full pl-11 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#ef5b1b]/20 focus:border-[#ef5b1b] outline-none transition-all placeholder:text-gray-400"
                   required
                 />
-              </div>
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-1.5">Vai trò hệ thống</label>
-            <div className="relative group">
-              <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400 group-focus-within:text-[#ef5b1b] transition-colors">
-                <Briefcase size={18} />
-              </div>
-              <select
-                name="role"
-                value={formData.role}
-                onChange={handleInputChange}
-                className="block w-full pl-11 pr-10 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#ef5b1b]/20 focus:border-[#ef5b1b] outline-none appearance-none transition-all"
-              >
-                <option value="customer">Khách hàng</option>
-                <option value="staff">Nhân viên</option>
-                <option value="admin">Quản lý</option>
-              </select>
-              <div className="absolute inset-y-0 right-0 pr-3.5 flex items-center pointer-events-none text-gray-400">
-                <ChevronDown size={18} />
               </div>
             </div>
           </div>
