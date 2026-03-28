@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Mail, Lock, Eye, EyeOff, ShieldCheck } from 'lucide-react';
 import AuthLayout from '../components/auth/AuthLayout';
 import { authApi } from '../api/auth';
@@ -14,6 +14,14 @@ const LoginPage: React.FC = () => {
   const [error, setError] = useState('');
   
   const navigate = useNavigate();
+  const location = useLocation();
+
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      navigate('/', { replace: true });
+    }
+  }, [navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -26,7 +34,9 @@ const LoginPage: React.FC = () => {
       localStorage.setItem('token', response.access_token);
       localStorage.setItem('refresh_token', response.refresh_token);
       localStorage.setItem('user', JSON.stringify(response.user));
-      navigate('/admin/users');
+      const state = location.state as { from?: { pathname?: string } } | null;
+      const redirectTo = state?.from?.pathname || '/';
+      navigate(redirectTo, { replace: true });
     } catch (err: unknown) {
       console.error('Login error:', err);
       if (axios.isAxiosError(err)) {
