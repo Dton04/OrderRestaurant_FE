@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { 
   Search, 
   Filter, 
@@ -7,16 +7,50 @@ import {
   Trash2,
   ChevronRight,
   ArrowUpDown,
-  ChevronLeft
+  ChevronLeft,
+  Loader2,
+  Image as ImageIcon
 } from 'lucide-react';
+import { dishApi } from '../../api/dish';
+import { categoryApi } from '../../api/category';
+import type { Dish } from '../../types/dish';
+import type { Category } from '../../types/category';
 
 const MenuManagementPage: React.FC = () => {
-  const dishes = [
-    { id: 'MENU-001', name: 'Salad Cá Ngừ Đại Dương', category: 'Khai vị', price: '185,000', status: 'Còn hàng', image: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=100&h=100&fit=crop' },
-    { id: 'MENU-042', name: 'Sườn Bò Nướng Tảng BBQ', category: 'Món chính', price: '520,000', status: 'Còn hàng', image: 'https://images.unsplash.com/photo-1544025162-d76694265947?w=100&h=100&fit=crop' },
-    { id: 'MENU-089', name: 'Atelier Sunset Cocktail', category: 'Đồ uống', price: '145,000', status: 'Hết hàng', image: 'https://images.unsplash.com/photo-1514362545857-3bc16c4c7d1b?w=100&h=100&fit=crop' },
-    { id: 'MENU-112', name: 'Premium Sushi Platter', category: 'Món chính', price: '890,000', status: 'Còn hàng', image: 'https://images.unsplash.com/photo-1579871494447-9811cf80d66c?w=100&h=100&fit=crop' },
-  ];
+  const [dishes, setDishes] = useState<Dish[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchMenuData = async () => {
+    try {
+      setLoading(true);
+      const [dishData, catData] = await Promise.all([
+        dishApi.findAll(),
+        categoryApi.findAll()
+      ]);
+      setDishes(dishData);
+      setCategories(catData);
+      setError(null);
+    } catch (err) {
+      console.error('Failed to fetch menu data:', err);
+      setError('Không thể tải dữ liệu thực đơn. Vui lòng thử lại sau.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchMenuData();
+  }, []);
+
+  const getCategoryName = (id: number) => {
+    return categories.find(c => c.id === id)?.name || `ID: ${id}`;
+  };
+
+  const formatPrice = (price: number) => {
+    return new Intl.NumberFormat('vi-VN').format(price);
+  };
 
   return (
     <div className="space-y-6 animate-in slide-in-from-bottom-3 duration-500 text-sm">
@@ -63,65 +97,88 @@ const MenuManagementPage: React.FC = () => {
           </div>
         </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full text-left">
-            <thead>
-              <tr className="text-[9px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-50">
-                <th className="pb-4">Hình ảnh</th>
-                <th className="pb-4">Tên món</th>
-                <th className="pb-4">Danh mục</th>
-                <th className="pb-4">Giá (VND)</th>
-                <th className="pb-4">Trạng thái</th>
-                <th className="pb-4 text-right">Thao tác</th>
-              </tr>
-            </thead>
-            <tbody className="text-[11px]">
-              {dishes.map((dish) => (
-                <tr key={dish.id} className="border-t border-gray-50 group hover:bg-gray-50/40 transition-colors">
-                  <td className="py-3">
-                    <img src={dish.image} alt={dish.name} className="w-10 h-10 rounded-lg object-cover shadow-sm bg-gray-100 grayscale hover:grayscale-0 transition-all duration-500" />
-                  </td>
-                  <td className="py-3">
-                    <p className="font-black text-gray-800">{dish.name}</p>
-                    <p className="text-[9px] text-gray-400 mt-0.5 font-bold tracking-tight">ID: {dish.id}</p>
-                  </td>
-                  <td className="py-3 font-bold">
-                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-orange-50 text-orange-700 text-[9px] font-black uppercase">
-                      {dish.category}
-                    </span>
-                  </td>
-                  <td className="py-3 font-black text-gray-700">{dish.price}</td>
-                  <td className="py-3">
-                    <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[9px] font-black tracking-tight ${
-                      dish.status === 'Còn hàng' ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'
-                    }`}>
-                      <div className={`w-1 h-1 rounded-full ${dish.status === 'Còn hàng' ? 'bg-green-500' : 'bg-red-500'}`}></div>
-                      {dish.status}
-                    </span>
-                  </td>
-                  <td className="py-3 text-right">
-                    <div className="flex justify-end gap-1">
-                      <button className="p-1.5 text-gray-400 hover:text-orange-600 hover:bg-orange-50 rounded-lg transition-all">
-                        <Edit2 size={14} />
-                      </button>
-                      <button className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all">
-                        <Trash2 size={14} />
-                      </button>
-                    </div>
-                  </td>
+        {loading ? (
+          <div className="flex flex-col items-center justify-center py-20 gap-3 text-gray-400">
+            <Loader2 className="animate-spin text-orange-600" size={32} />
+            <p className="text-xs font-black uppercase tracking-widest">Đang tải món ăn...</p>
+          </div>
+        ) : error ? (
+          <div className="p-8 bg-red-50 rounded-2xl border border-red-100 text-center space-y-3">
+            <p className="text-red-600 font-bold">{error}</p>
+            <button 
+              onClick={fetchMenuData}
+              className="px-6 py-2 bg-white border border-red-100 rounded-xl text-[10px] font-black uppercase text-red-600 hover:bg-red-100 transition-colors"
+            >
+              Thử lại
+            </button>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left">
+              <thead>
+                <tr className="text-[9px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-50">
+                  <th className="pb-4">Hình ảnh</th>
+                  <th className="pb-4">Tên món</th>
+                  <th className="pb-4">Danh mục</th>
+                  <th className="pb-4">Giá (VND)</th>
+                  <th className="pb-4">Trạng thái</th>
+                  <th className="pb-4 text-right">Thao tác</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody className="text-[11px]">
+                {dishes.map((dish) => (
+                  <tr key={dish.id} className="border-t border-gray-50 group hover:bg-gray-50/40 transition-colors">
+                    <td className="py-3">
+                      {dish.image_url ? (
+                        <img src={dish.image_url} alt={dish.name} className="w-10 h-10 rounded-lg object-cover shadow-sm bg-gray-100 grayscale hover:grayscale-0 transition-all duration-500" />
+                      ) : (
+                        <div className="w-10 h-10 rounded-lg bg-gray-50 flex items-center justify-center text-gray-200">
+                          <ImageIcon size={20} />
+                        </div>
+                      )}
+                    </td>
+                    <td className="py-3">
+                      <p className="font-black text-gray-800">{dish.name}</p>
+                      <p className="text-[9px] text-gray-400 mt-0.5 font-bold tracking-tight">ID: MENU-{dish.id.toString().padStart(3, '0')}</p>
+                    </td>
+                    <td className="py-3 font-bold">
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-orange-50 text-orange-700 text-[9px] font-black uppercase">
+                        {getCategoryName(dish.category_id as number)}
+                      </span>
+                    </td>
+                    <td className="py-3 font-black text-gray-700">{formatPrice(dish.price)}</td>
+                    <td className="py-3">
+                      <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[9px] font-black tracking-tight ${
+                        dish.is_available !== false ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'
+                      }`}>
+                        <div className={`w-1 h-1 rounded-full ${dish.is_available !== false ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                        {dish.is_available !== false ? 'Còn hàng' : 'Hết hàng'}
+                      </span>
+                    </td>
+                    <td className="py-3 text-right">
+                      <div className="flex justify-end gap-1">
+                        <button className="p-1.5 text-gray-400 hover:text-orange-600 hover:bg-orange-50 rounded-lg transition-all">
+                          <Edit2 size={14} />
+                        </button>
+                        <button className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all">
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
 
         <div className="flex justify-between items-center pt-5 border-t border-gray-50 text-[10px] font-bold">
-          <p className="text-gray-400">Hiển thị <span className="text-gray-700">1-10</span> / <span className="text-gray-700">45</span> món</p>
+          <p className="text-gray-400">Hiển thị <span className="text-gray-700">1-{dishes.length}</span> / <span className="text-gray-700">{dishes.length}</span> món</p>
           <div className="flex gap-1.5">
             <button className="p-1.5 border border-gray-100 rounded-lg text-gray-400 hover:bg-gray-50 transition-colors">
               <ChevronLeft size={14} />
             </button>
-            {[1, 2, 3, '...', 5].map((p, i) => (
+            {[1].map((p, i) => (
               <button key={i} className={`w-7 h-7 rounded-lg transition-all ${
                 p === 1 ? 'bg-orange-700 text-white shadow shadow-orange-100' : 'text-gray-500 hover:bg-gray-50'
               }`}>
@@ -143,7 +200,7 @@ const MenuManagementPage: React.FC = () => {
           </div>
           <div className="flex items-center gap-2">
             <div className="w-1.5 h-1.5 rounded-full bg-cyan-500"></div>
-            CẬP NHẬT CUỐI: 2 PHÚT TRƯỚC
+            CẬP NHẬT CUỐI: VỪA XONG
           </div>
         </div>
         <p className="text-[10px] text-gray-400 font-medium">© 2024 Culinary Atelier Group. All Rights Reserved.</p>
