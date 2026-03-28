@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import AdminUsersPage from './pages/AdminUsersPage';
+import CheckoutPage from './pages/CheckoutPage';
 
 const getDefaultRoute = () => {
   const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
@@ -15,12 +16,14 @@ function App() {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/admin/users" element={<AdminUsersPage />} />
+        <Route path="/checkout" element={<CheckoutPage />} />
+
+        {/* Điều hướng mặc định dựa trên token */}
         <Route path="/" element={<Navigate to={getDefaultRoute()} replace />} />
         <Route path="*" element={<Navigate to={getDefaultRoute()} replace />} />
       </Routes>
     </Router>
   );
 }
-
 
 export default App;
