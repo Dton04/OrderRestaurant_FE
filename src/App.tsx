@@ -8,6 +8,7 @@ import {
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import HomePage from './pages/HomePage';
+import AdminLayout from './components/Admin/Layout';
 import AdminUsersPage from './pages/AdminUsersPage';
 import DashboardPage from './pages/Admin/DashboardPage';
 import MenuManagementPage from './pages/Admin/MenuManagementPage';
@@ -20,6 +21,34 @@ function RequireAuth({ children }: { children: React.ReactNode }) {
 
   if (!token) {
     return <Navigate to="/login" replace state={{ from: location }} />;
+  }
+
+  return <>{children}</>;
+}
+
+function RequireAdmin({ children }: { children: React.ReactNode }) {
+  const location = useLocation();
+  const token = localStorage.getItem('token');
+  const userRaw = localStorage.getItem('user');
+  let role = '';
+  if (userRaw) {
+    try {
+      const parsed: unknown = JSON.parse(userRaw);
+      role =
+        parsed && typeof parsed === 'object' && 'role' in parsed
+          ? String((parsed as Record<string, unknown>).role || '')
+          : '';
+    } catch {
+      role = '';
+    }
+  }
+
+  if (!token) {
+    return <Navigate to="/login" replace state={{ from: location }} />;
+  }
+
+  if (role.toLowerCase() !== 'admin') {
+    return <Navigate to="/" replace />;
   }
 
   return <>{children}</>;
@@ -40,45 +69,22 @@ function App() {
           }
         />
         <Route
-          path="/admin/dashboard"
+          path="/admin"
           element={
-            <RequireAuth>
-              <DashboardPage />
-            </RequireAuth>
+            <RequireAdmin>
+              <AdminLayout />
+            </RequireAdmin>
           }
-        />
-        <Route
-          path="/admin/users"
-          element={
-            <RequireAuth>
-              <AdminUsersPage />
-            </RequireAuth>
-          }
-        />
-        <Route
-          path="/admin/menu"
-          element={
-            <RequireAuth>
-              <MenuManagementPage />
-            </RequireAuth>
-          }
-        />
-        <Route
-          path="/admin/categories"
-          element={
-            <RequireAuth>
-              <CategoryManagementPage />
-            </RequireAuth>
-          }
-        />
-        <Route
-          path="/admin/tables"
-          element={
-            <RequireAuth>
-              <TableManagementPage />
-            </RequireAuth>
-          }
-        />
+        >
+          <Route index element={<Navigate to="dashboard" replace />} />
+          <Route path="dashboard" element={<DashboardPage />} />
+          <Route path="users" element={<AdminUsersPage />} />
+          <Route path="menu" element={<MenuManagementPage />} />
+          <Route path="categories" element={<CategoryManagementPage />} />
+          <Route path="tables" element={<TableManagementPage />} />
+          <Route path="reports" element={<DashboardPage />} />
+          <Route path="settings" element={<DashboardPage />} />
+        </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Router>

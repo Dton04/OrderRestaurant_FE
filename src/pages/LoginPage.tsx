@@ -18,8 +18,25 @@ const LoginPage: React.FC = () => {
 
   useEffect(() => {
     const token = localStorage.getItem('token');
+    const userRaw = localStorage.getItem('user');
+    let role = '';
+    if (userRaw) {
+      try {
+        const parsed: unknown = JSON.parse(userRaw);
+        role =
+          parsed && typeof parsed === 'object' && 'role' in parsed
+            ? String((parsed as Record<string, unknown>).role || '')
+            : '';
+      } catch {
+        role = '';
+      }
+    }
     if (token) {
-      navigate('/', { replace: true });
+      if (role.toLowerCase() === 'admin') {
+        navigate('/admin', { replace: true });
+      } else {
+        navigate('/', { replace: true });
+      }
     }
   }, [navigate]);
 
@@ -34,9 +51,18 @@ const LoginPage: React.FC = () => {
       localStorage.setItem('token', response.access_token);
       localStorage.setItem('refresh_token', response.refresh_token);
       localStorage.setItem('user', JSON.stringify(response.user));
-      const state = location.state as { from?: { pathname?: string } } | null;
-      const redirectTo = state?.from?.pathname || '/';
-      navigate(redirectTo, { replace: true });
+      const role = String(response.user?.role || '');
+      if (role.toLowerCase() === 'admin') {
+        const state = location.state as { from?: { pathname?: string } } | null;
+        const redirectTo = state?.from?.pathname?.startsWith('/admin')
+          ? state?.from?.pathname
+          : '/admin';
+        navigate(redirectTo || '/admin', { replace: true });
+      } else {
+        const state = location.state as { from?: { pathname?: string } } | null;
+        const redirectTo = state?.from?.pathname?.startsWith('/admin') ? '/' : state?.from?.pathname || '/';
+        navigate(redirectTo, { replace: true });
+      }
     } catch (err: unknown) {
       console.error('Login error:', err);
       if (axios.isAxiosError(err)) {

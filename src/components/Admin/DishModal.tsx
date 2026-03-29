@@ -3,6 +3,7 @@ import { X, Loader2, Upload, DollarSign, Tag, FileText, Check } from 'lucide-rea
 import { dishApi } from '../../api/dish';
 import type { Dish, CreateDishDto } from '../../types/dish';
 import type { Category } from '../../types/category';
+import axios from 'axios';
 
 interface DishModalProps {
   isOpen: boolean;
@@ -63,9 +64,22 @@ const DishModal: React.FC<DishModalProps> = ({ isOpen, onClose, onSuccess, dish,
 
       onSuccess();
       onClose();
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Failed to save dish:', err);
-      setError(err.response?.data?.message || 'Có lỗi xảy ra khi lưu món ăn. Vui lòng thử lại.');
+      if (axios.isAxiosError(err)) {
+        const data: unknown = err.response?.data;
+        const message =
+          data && typeof data === 'object' && 'message' in data
+            ? (data as Record<string, unknown>).message
+            : undefined;
+        setError(
+          typeof message === 'string'
+            ? message
+            : 'Có lỗi xảy ra khi lưu món ăn. Vui lòng thử lại.',
+        );
+      } else {
+        setError('Có lỗi xảy ra khi lưu món ăn. Vui lòng thử lại.');
+      }
     } finally {
       setLoading(false);
     }

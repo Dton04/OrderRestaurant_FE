@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { X, Loader2, Monitor, Users, Check, MapPin } from 'lucide-react';
 import { tableApi } from '../../api/table';
 import type { Table, CreateTableDto } from '../../types/table';
+import axios from 'axios';
 
 interface TableModalProps {
   isOpen: boolean;
@@ -55,9 +56,22 @@ const TableModal: React.FC<TableModalProps> = ({ isOpen, onClose, onSuccess, tab
 
       onSuccess();
       onClose();
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Failed to save table:', err);
-      setError(err.response?.data?.message || 'Có lỗi xảy ra khi lưu thông tin bàn. Vui lòng thử lại.');
+      if (axios.isAxiosError(err)) {
+        const data: unknown = err.response?.data;
+        const message =
+          data && typeof data === 'object' && 'message' in data
+            ? (data as Record<string, unknown>).message
+            : undefined;
+        setError(
+          typeof message === 'string'
+            ? message
+            : 'Có lỗi xảy ra khi lưu thông tin bàn. Vui lòng thử lại.',
+        );
+      } else {
+        setError('Có lỗi xảy ra khi lưu thông tin bàn. Vui lòng thử lại.');
+      }
     } finally {
       setLoading(false);
     }

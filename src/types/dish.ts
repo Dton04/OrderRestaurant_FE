@@ -7,7 +7,7 @@ export interface CreateDishDto {
   is_available?: boolean;
 }
 
-export interface UpdateDishDto extends Partial<CreateDishDto> {}
+export type UpdateDishDto = Partial<CreateDishDto>;
 
 export interface Dish extends CreateDishDto {
   id: number;

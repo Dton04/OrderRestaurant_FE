@@ -4,7 +4,7 @@ export interface CreateCategoryDto {
   image_url?: string;
 }
 
-export interface UpdateCategoryDto extends Partial<CreateCategoryDto> {}
+export type UpdateCategoryDto = Partial<CreateCategoryDto>;
 
 export interface Category extends CreateCategoryDto {
   id: number;

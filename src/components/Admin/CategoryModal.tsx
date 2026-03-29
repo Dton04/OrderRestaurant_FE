@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { X, Loader2, Upload, Tag, FileText, Check } from 'lucide-react';
 import { categoryApi } from '../../api/category';
 import type { Category, CreateCategoryDto } from '../../types/category';
+import axios from 'axios';
 
 interface CategoryModalProps {
   isOpen: boolean;
@@ -52,9 +53,22 @@ const CategoryModal: React.FC<CategoryModalProps> = ({ isOpen, onClose, onSucces
 
       onSuccess();
       onClose();
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Failed to save category:', err);
-      setError(err.response?.data?.message || 'Có lỗi xảy ra khi lưu danh mục. Vui lòng thử lại.');
+      if (axios.isAxiosError(err)) {
+        const data: unknown = err.response?.data;
+        const message =
+          data && typeof data === 'object' && 'message' in data
+            ? (data as Record<string, unknown>).message
+            : undefined;
+        setError(
+          typeof message === 'string'
+            ? message
+            : 'Có lỗi xảy ra khi lưu danh mục. Vui lòng thử lại.',
+        );
+      } else {
+        setError('Có lỗi xảy ra khi lưu danh mục. Vui lòng thử lại.');
+      }
     } finally {
       setLoading(false);
     }
