@@ -13,6 +13,11 @@ import DashboardPage from './pages/Admin/DashboardPage';
 import MenuManagementPage from './pages/Admin/MenuManagementPage';
 import CategoryManagementPage from './pages/Admin/CategoryManagementPage';
 import TableManagementPage from './pages/Admin/TableManagementPage';
+<<<<<<< Updated upstream
+=======
+import ServePage from './pages/ServePage';
+import TableMenuPage from './pages/TableMenuPage';
+>>>>>>> Stashed changes
 
 function RequireAuth({ children }: { children: React.ReactNode }) {
   const location = useLocation();
@@ -40,6 +45,27 @@ function App() {
           }
         />
         <Route
+<<<<<<< Updated upstream
+=======
+          path="/serve"
+          element={
+            <RequireAuth>
+              <ServePage />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/table-menu"
+          element={
+            <RequireAuth>
+              <TableMenuPage />
+            </RequireAuth>
+          }
+        />
+
+        {/* Admin Routes */}
+        <Route
+>>>>>>> Stashed changes
           path="/admin/dashboard"
           element={
             <RequireAuth>
