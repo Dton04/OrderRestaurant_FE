@@ -14,6 +14,7 @@ import DashboardPage from './pages/Admin/DashboardPage';
 import MenuManagementPage from './pages/Admin/MenuManagementPage';
 import CategoryManagementPage from './pages/Admin/CategoryManagementPage';
 import TableManagementPage from './pages/Admin/TableManagementPage';
+import ServePage from './pages/ServePage';
 
 // Component bảo vệ Route
 function RequireAuth({ children }: { children: React.ReactNode }) {
@@ -43,6 +44,14 @@ function App() {
           element={
             <RequireAuth>
               <CheckoutPage />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/serve"
+          element={
+            <RequireAuth>
+              <ServePage />
             </RequireAuth>
           }
         />

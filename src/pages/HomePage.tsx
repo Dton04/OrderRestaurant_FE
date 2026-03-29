@@ -108,6 +108,9 @@ const HomePage: React.FC = () => {
           <div className="flex items-center gap-3 md:gap-4">
             {user ? (
               <>
+                <Link to="/serve" className="hidden md:inline-flex font-bold text-green-600 hover:text-green-700 transition-colors mr-4">
+                  Phục vụ tại bàn
+                </Link>
                 <Link to="/checkout" className="hidden md:inline-flex font-bold text-[#ef5b1b] hover:text-[#d44d15] transition-colors mr-2">
                   Giỏ hàng (Checkout)
                 </Link>
@@ -165,6 +168,12 @@ const HomePage: React.FC = () => {
                         className="px-6 py-3.5 rounded-xl bg-[#ef5b1b] shadow-xl shadow-orange-500/20 text-white font-bold hover:bg-[#d44d15] transition-all transform hover:-translate-y-0.5 text-center"
                       >
                         Tiếp tục đặt món
+                      </Link>
+                      <Link
+                        to="/serve"
+                        className="px-6 py-3.5 rounded-xl bg-green-600 shadow-xl shadow-green-600/20 text-white font-bold hover:bg-green-700 transition-all transform hover:-translate-y-0.5 text-center"
+                      >
+                        Tạo đơn tại bàn
                       </Link>
                       <Link
                         to="/admin/dashboard"
