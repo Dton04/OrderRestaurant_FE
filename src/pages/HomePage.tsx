@@ -1,5 +1,5 @@
 import React from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import {
   BarChart3,
   ClipboardList,
@@ -73,14 +73,13 @@ const TESTIMONIALS = [
 ] as const;
 
 const HomePage: React.FC = () => {
-  const navigate = useNavigate();
   const user = safeParseUser(localStorage.getItem('user'));
 
   const handleLogout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('refresh_token');
     localStorage.removeItem('user');
-    navigate('/login', { replace: true });
+    window.location.href = '/';
   };
 
   return (
@@ -106,20 +105,36 @@ const HomePage: React.FC = () => {
             </a>
           </nav>
 
-          <div className="flex items-center gap-3">
-            <div className="hidden sm:block text-right">
-              <div className="text-xs text-gray-500">Xin chào</div>
-              <div className="text-sm font-bold text-gray-900">
-                {user?.full_name || 'Người dùng'}
-              </div>
-            </div>
-            <button
-              onClick={handleLogout}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#ef5b1b] hover:bg-[#d44d15] text-white font-bold shadow-sm transition-colors"
-            >
-              <LogOut size={18} />
-              Logout
-            </button>
+          <div className="flex items-center gap-3 md:gap-4">
+            {user ? (
+              <>
+                <Link to="/checkout" className="hidden md:inline-flex font-bold text-[#ef5b1b] hover:text-[#d44d15] transition-colors mr-2">
+                  Giỏ hàng (Checkout)
+                </Link>
+                <div className="hidden sm:block text-right border-l pl-4 border-gray-200">
+                  <div className="text-xs text-gray-500">Xin chào</div>
+                  <div className="text-sm font-bold text-gray-900">
+                    {user?.full_name || 'Người dùng'}
+                  </div>
+                </div>
+                <button
+                  onClick={handleLogout}
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#ef5b1b] hover:bg-[#d44d15] text-white font-bold shadow-sm transition-colors"
+                >
+                  <LogOut size={18} />
+                  <span className="hidden sm:inline">Logout</span>
+                </button>
+              </>
+            ) : (
+              <>
+                <Link to="/login" className="font-semibold text-gray-700 hover:text-[#ef5b1b] transition-colors">
+                  Đăng nhập
+                </Link>
+                <Link to="/register" className="inline-flex items-center px-4 py-2 rounded-xl bg-[#ef5b1b] hover:bg-[#d44d15] text-white font-bold shadow-sm transition-colors">
+                  Đăng ký
+                </Link>
+              </>
+            )}
           </div>
         </div>
       </header>
@@ -143,15 +158,34 @@ const HomePage: React.FC = () => {
                 </p>
 
                 <div className="mt-6 flex flex-col sm:flex-row gap-3">
-                  <button className="px-5 py-3 rounded-xl bg-gray-900 text-white font-bold hover:bg-black transition-colors">
-                    Bắt đầu ngay
-                  </button>
-                  <Link
-                    to="/login"
-                    className="px-5 py-3 rounded-xl bg-white border border-gray-200 text-gray-900 font-bold hover:bg-gray-50 transition-colors text-center"
-                  >
-                    Đăng nhập
-                  </Link>
+                  {user ? (
+                    <>
+                      <Link
+                        to="/checkout"
+                        className="px-6 py-3.5 rounded-xl bg-[#ef5b1b] shadow-xl shadow-orange-500/20 text-white font-bold hover:bg-[#d44d15] transition-all transform hover:-translate-y-0.5 text-center"
+                      >
+                        Tiếp tục đặt món
+                      </Link>
+                      <Link
+                        to="/admin/dashboard"
+                        className="px-6 py-3.5 rounded-xl bg-gray-900 shadow-xl shadow-gray-900/20 text-white font-bold hover:bg-black transition-all transform hover:-translate-y-0.5 text-center"
+                      >
+                        Quản trị (Admin)
+                      </Link>
+                    </>
+                  ) : (
+                    <>
+                      <Link to="/register" className="px-6 py-3.5 rounded-xl bg-gray-900 shadow-xl shadow-gray-900/20 text-white font-bold hover:bg-black transition-all transform hover:-translate-y-0.5 text-center">
+                        Bắt đầu ngay
+                      </Link>
+                      <Link
+                        to="/login"
+                        className="px-6 py-3.5 rounded-xl bg-white border border-gray-200 text-gray-900 font-bold hover:bg-gray-50 hover:border-gray-300 transition-all text-center"
+                      >
+                        Đăng nhập
+                      </Link>
+                    </>
+                  )}
                 </div>
               </div>
 
