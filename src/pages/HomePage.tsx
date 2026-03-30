@@ -104,6 +104,12 @@ const HomePage: React.FC = () => {
             <a href="#reviews" className="hover:text-[#ef5b1b] transition-colors">
               Menu số
             </a>
+            <Link to="/serve" className="text-emerald-600 font-bold hover:text-emerald-700 transition-colors">
+              Phục vụ tại bàn
+            </Link>
+            <Link to="/checkout" className="text-[#ef5b1b] font-bold hover:text-[#d44d15] transition-colors">
+              Giỏ hàng (Checkout)
+            </Link>
           </nav>
 
           <div className="flex items-center gap-3">
@@ -142,15 +148,24 @@ const HomePage: React.FC = () => {
                   Theo dõi thời gian thực và ra quyết định dựa trên dữ liệu.
                 </p>
 
-                <div className="mt-6 flex flex-col sm:flex-row gap-3">
-                  <button className="px-5 py-3 rounded-xl bg-gray-900 text-white font-bold hover:bg-black transition-colors">
-                    Bắt đầu ngay
-                  </button>
+                <div className="mt-6 flex flex-col md:flex-row flex-wrap gap-3">
                   <Link
-                    to="/login"
-                    className="px-5 py-3 rounded-xl bg-white border border-gray-200 text-gray-900 font-bold hover:bg-gray-50 transition-colors text-center"
+                    to="/table-menu"
+                    className="px-8 py-4 rounded-xl bg-[#ef5b1b] hover:bg-[#d44d15] text-white font-bold shadow-sm transition-colors text-center text-lg md:w-auto"
                   >
-                    Đăng nhập
+                    Tiếp tục đặt món
+                  </Link>
+                  <Link
+                    to="/serve"
+                    className="px-8 py-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold shadow-sm transition-colors text-center text-lg md:w-auto"
+                  >
+                    Tạo đơn tại bàn
+                  </Link>
+                  <Link
+                    to="/admin/dashboard"
+                    className="px-8 py-4 rounded-xl bg-slate-900 hover:bg-black text-white font-bold shadow-sm transition-colors text-center text-lg md:w-auto"
+                  >
+                    Quản trị (Admin)
                   </Link>
                 </div>
               </div>
