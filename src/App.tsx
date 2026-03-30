@@ -1,3 +1,30 @@
+function RequireStaff({ children }: { children: React.ReactNode }) {
+  const location = useLocation();
+  const token = localStorage.getItem('token');
+  const userRaw = localStorage.getItem('user');
+  let role = '';
+  if (userRaw) {
+    try {
+      const parsed: unknown = JSON.parse(userRaw);
+      role =
+        parsed && typeof parsed === 'object' && 'role' in parsed
+          ? String((parsed as Record<string, unknown>).role || '')
+          : '';
+    } catch {
+      role = '';
+    }
+  }
+
+  if (!token) {
+    return <Navigate to="/login" replace state={{ from: location }} />;
+  }
+
+  if (role.toLowerCase() !== 'staff') {
+    return <Navigate to="/" replace />;
+  }
+
+  return <>{children}</>;
+}
 import {
   BrowserRouter as Router,
   Routes,
@@ -14,6 +41,7 @@ import DashboardPage from './pages/Admin/DashboardPage';
 import MenuManagementPage from './pages/Admin/MenuManagementPage';
 import CategoryManagementPage from './pages/Admin/CategoryManagementPage';
 import TableManagementPage from './pages/Admin/TableManagementPage';
+import TableMapPage from './pages/Staff/TableMapPage';
 
 function RequireAuth({ children }: { children: React.ReactNode }) {
   const location = useLocation();
@@ -85,6 +113,14 @@ function App() {
           <Route path="reports" element={<DashboardPage />} />
           <Route path="settings" element={<DashboardPage />} />
         </Route>
+        <Route
+          path="/staff/table-map"
+          element={
+            <RequireStaff>
+              <TableMapPage />
+            </RequireStaff>
+          }
+        />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Router>

@@ -58,6 +58,8 @@ const LoginPage: React.FC = () => {
           ? state?.from?.pathname
           : '/admin';
         navigate(redirectTo || '/admin', { replace: true });
+      } else if (role.toLowerCase() === 'staff') {
+        navigate('/staff/table-map', { replace: true });
       } else {
         const state = location.state as { from?: { pathname?: string } } | null;
         const redirectTo = state?.from?.pathname?.startsWith('/admin') ? '/' : state?.from?.pathname || '/';
