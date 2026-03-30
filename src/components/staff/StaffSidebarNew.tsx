@@ -44,7 +44,7 @@ const StaffSidebarNew: React.FC = () => {
   };
 
   return (
-    <aside className="w-64 bg-white h-screen border-r border-gray-100 flex flex-col fixed left-0 top-0 z-20">
+    <aside className="w-64 bg-white h-screen border-r border-gray-90 flex flex-col fixed left-0 top-0 z-20 pt-10">
       <div className="p-5 flex items-center gap-3">
         <div className="w-10 h-10 bg-orange-500 rounded-xl flex items-center justify-center text-white font-extrabold text-lg">A</div>
         <div>

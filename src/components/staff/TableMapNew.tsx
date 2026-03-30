@@ -55,7 +55,7 @@ const TableMapNew: React.FC<{ onSelectTable: (table: any) => void }> = ({ onSele
   }
 
   return (
-    <div className="grid grid-cols-3 md:grid-cols-4 gap-6">
+    <div className="grid grid-cols-3 md:grid-cols-4 gap-6 pt-5">
       {tables.map((t) => (
         <div
           key={t.id}
