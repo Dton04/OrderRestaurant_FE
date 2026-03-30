@@ -21,6 +21,21 @@ const statusSummary = [
 const StaffSidebarNew: React.FC = () => {
   const navigate = useNavigate();
 
+  let user: { full_name?: string; role?: string } | null = null;
+  const userRaw = localStorage.getItem('user');
+  if (userRaw) {
+    try {
+      const parsed = JSON.parse(userRaw);
+      if (parsed && typeof parsed === 'object') {
+        user = parsed as { full_name?: string; role?: string };
+      }
+    } catch {
+      user = null;
+    }
+  }
+
+  const userName = user?.full_name || 'Staff User';
+
   const handleLogout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('refresh_token');
@@ -33,7 +48,7 @@ const StaffSidebarNew: React.FC = () => {
       <div className="p-5 flex items-center gap-3">
         <div className="w-10 h-10 bg-orange-500 rounded-xl flex items-center justify-center text-white font-extrabold text-lg">A</div>
         <div>
-          <div className="font-extrabold text-gray-900">The Atelier</div>
+          <div className="font-extrabold text-gray-900">{userName}</div>
           <div className="text-xs text-gray-400">Main Dining Room</div>
         </div>
       </div>
