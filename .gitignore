@@ -24,3 +24,5 @@ dist-ssr
 *.sw?
 
 /agent-skills-main
+
+/src/generated/prisma

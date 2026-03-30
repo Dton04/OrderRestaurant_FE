@@ -1,10 +1,15 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { ChevronLeft, UtensilsCrossed, AlignLeft } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import axios from 'axios';
 
 const CheckoutPage: React.FC = () => {
     const navigate = useNavigate();
     const location = useLocation();
+
+    // 1. Thêm các State này ở đầu component
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [specialNote, setSpecialNote] = useState('');
 
     // Lấy dữ liệu từ state khi navigate, nếu không có thì lấy dữ liệu hiển thị mặc định
     const state = (location.state as any) || {
@@ -35,13 +40,47 @@ const CheckoutPage: React.FC = () => {
     const { table, items, subtotal, tax, total } = state;
     const totalItemsCount = items.reduce((acc: number, item: any) => acc + item.quantity, 0);
 
+    // 2. Thêm hàm xử lý
+    const handlePlaceOrder = async () => {
+        if (isSubmitting) return;
+        setIsSubmitting(true);
+
+        try {
+            const orderPayload = {
+                table_id: Number(table), // QUAN TRỌNG: Chuyển "05" thành 5
+                total_amount: subtotal,
+                discount_amount: 0,
+                final_amount: total,
+                status: "PENDING",
+                items: items.map((item: any) => ({
+                    dish_id: Number(item.id), 
+                    quantity: item.quantity,
+                    price_at_order: item.price
+                }))
+            };
+
+            const response = await axios.post('http://localhost:3000/orders', orderPayload);
+            
+            if (response.status === 201 || response.status === 200) {
+                alert("Đặt món thành công! Bếp đã nhận được tín hiệu.");
+                navigate('/'); 
+            }
+        } catch (error: any) {
+            console.error("Lỗi:", error);
+            const backendMsg = error.response?.data?.message || "Không thể kết nối đến máy chủ";
+            alert("Lỗi Đặt Món: " + backendMsg);
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
     return (
         <div className="min-h-[100svh] bg-[#FDFCFB] text-[#555] font-sans pb-[120px] flex justify-center selection:bg-[#C2410C] selection:text-white">
             <div className="w-full max-w-md bg-[#FDFCFB] flex flex-col min-h-[100svh] relative">
                 
                 {/* Header */}
                 <header className="flex items-center justify-between px-6 py-6 sticky top-0 bg-[#FDFCFB]/90 backdrop-blur-md z-30">
-                    <button onClick={() => navigate(-1)} className="p-2 -ml-2 text-[#C2410C] hover:bg-orange-50 rounded-full transition-colors">
+                    <button onClick={() => navigate(-1)} className="p-2 -ml-2 text-[#C2410C] hover:bg-orange-50 rounded-full transition-colors disabled:opacity-50" disabled={isSubmitting}>
                         <ChevronLeft size={28} strokeWidth={2} />
                     </button>
                     <div className="text-[20px] font-serif tracking-wide text-[#C2410C] absolute left-1/2 -translate-x-1/2 font-bold whitespace-nowrap m-0 style-override">
@@ -99,7 +138,10 @@ const CheckoutPage: React.FC = () => {
                         </div>
                         <div className="relative">
                             <textarea 
-                                className="w-full bg-white border border-[#f5d9c4] shadow-[0_2px_15px_rgba(194,65,12,0.06)] transition-colors rounded-[24px] p-5 min-h-[120px] text-[14px] text-[#a13203] resize-none focus:outline-none focus:ring-2 focus:ring-[#C2410C]/30 focus:border-[#C2410C]/50 placeholder-[#e2aa8f] leading-relaxed font-medium"
+                                value={specialNote}
+                                onChange={(e) => setSpecialNote(e.target.value)}
+                                disabled={isSubmitting}
+                                className="w-full bg-white border border-[#f5d9c4] shadow-[0_2px_15px_rgba(194,65,12,0.06)] transition-colors rounded-[24px] p-5 min-h-[120px] text-[14px] text-[#a13203] resize-none focus:outline-none focus:ring-2 focus:ring-[#C2410C]/30 focus:border-[#C2410C]/50 placeholder-[#e2aa8f] leading-relaxed font-medium disabled:opacity-75 disabled:bg-gray-50"
                                 placeholder="Không cay, ít hành hoặc yêu cầu riêng của quý khách..."
                             ></textarea>
                             <UtensilsCrossed size={18} strokeWidth={2} className="absolute bottom-5 right-5 text-[#f5d9c4]" />
@@ -135,11 +177,19 @@ const CheckoutPage: React.FC = () => {
                 <div className="fixed bottom-0 left-0 right-0 flex justify-center z-20 pointer-events-none">
                     <div className="w-full max-w-md bg-gradient-to-t from-[#FDFCFB] via-[#FDFCFB] to-[#FDFCFB]/0 pt-16 pb-6 px-6 pointer-events-auto flex flex-col items-center">
                         <button 
-                            onClick={() => navigate('/')}
-                            className="w-full bg-[#C2410C] hover:bg-[#a33508] active:scale-[0.98] transition-all text-white font-bold tracking-wide text-[16px] py-4 rounded-[20px] shadow-[0_8px_30px_rgba(194,65,12,0.4)] flex items-center justify-center gap-3"
+                            onClick={handlePlaceOrder}
+                            disabled={isSubmitting}
+                            className={`w-full bg-[#C2410C] hover:bg-[#a33508] active:scale-[0.98] transition-all text-white font-bold tracking-wide text-[16px] py-4 rounded-[20px] shadow-[0_8px_30px_rgba(194,65,12,0.4)] flex items-center justify-center gap-3 ${isSubmitting ? 'opacity-70 cursor-not-allowed' : ''}`}
                         >
-                            <UtensilsCrossed size={18} strokeWidth={2.5} className="opacity-100" />
-                            GỬI YÊU CẦU ĐẶT MÓN
+                            {isSubmitting ? (
+                                <div className="flex items-center gap-2">
+                                    <span className="animate-spin text-lg block origin-center leading-none">◌</span> ĐANG GỬI ĐƠN...
+                                </div>
+                            ) : (
+                                <>
+                                    <UtensilsCrossed size={18} /> GỬI YÊU CẦU ĐẶT MÓN
+                                </>
+                            )}
                         </button>
                         <div className="text-[10px] text-[#d67a4d] uppercase tracking-widest font-bold mt-4 m-0">
                             Trải nghiệm ẩm thực thượng lưu

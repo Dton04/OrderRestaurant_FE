@@ -15,7 +15,7 @@ interface Dish {
 
 const DISHES: Dish[] = [
   {
-    id: 's1',
+    id: '1',
     category: 'Khai vị',
     name: 'Gỏi Cuốn Tôm Thịt',
     description: 'Bánh tráng cuộn tôm thịt, rau thơm, bún mỏng dùng kèm tương đậu phộng đậm đà.',
@@ -25,7 +25,7 @@ const DISHES: Dish[] = [
     badgeColor: 'bg-orange-100 text-orange-600',
   },
   {
-    id: 's2',
+    id: '2',
     category: 'Khai vị',
     name: 'Nem Rán Hà Nội',
     description: 'Nem rán giòn rụm với nhân thịt heo băm, mộc nhĩ, miến và rau củ.',
@@ -33,7 +33,7 @@ const DISHES: Dish[] = [
     image: 'https://icdn.one/upload/2020/11/13/20201113061759-f9295f1c.jpg',
   },
   {
-    id: 'm1',
+    id: '3',
     category: 'Món chính',
     name: 'Phở Bò Truyền Thống',
     description: 'Nước dùng hầm xương ngọt thanh, bánh phở mềm cùng thịt bò tái nạm chín.',
@@ -43,7 +43,7 @@ const DISHES: Dish[] = [
     badgeColor: 'bg-green-500 text-white',
   },
   {
-    id: 'm2',
+    id: '4',
     category: 'Món chính',
     name: 'Bún Chả Quạt',
     description: 'Thịt heo nướng than hoa thơm lừng, ăn kèm bún tươi và nước mắm chua ngọt.',
@@ -51,7 +51,7 @@ const DISHES: Dish[] = [
     image: 'https://dulichninhbinh.com.vn/mypicture/images/amthuc/bun-cha-quat-ninh-binh.jpg',
   },
   {
-    id: 'm3',
+    id: '5',
     category: 'Món chính',
     name: 'Cơm Tấm Sườn Bì',
     description: 'Cơm tấm dẻo mặn mà cùng sườn nướng mật ong, bì chả và mỡ hành thơm lừng.',
@@ -61,7 +61,7 @@ const DISHES: Dish[] = [
     badgeColor: 'bg-red-100 text-red-600',
   },
   {
-    id: 'd1',
+    id: '6',
     category: 'Đồ uống',
     name: 'Trà Đá Dịp Hè',
     description: 'Trà đá lài thơm mát giải khát tuyệt vời cho những ngày nắng nóng.',
@@ -69,7 +69,7 @@ const DISHES: Dish[] = [
     image: 'https://file.hstatic.net/200000426635/file/tra_da_via_he_2_1eb5837e7d1843f0ad08cd15c898b674_grande.jpg',
   },
   {
-    id: 'd2',
+    id: '7',
     category: 'Đồ uống',
     name: 'Cà Phê Sữa Đá',
     description: 'Cà phê phin truyền thống Việt Nam hòa quyện cùng sữa đặc béo ngậy.',
@@ -79,7 +79,7 @@ const DISHES: Dish[] = [
     badgeColor: 'bg-orange-100 text-orange-600',
   },
   {
-    id: 'de1',
+    id: '8',
     category: 'Tráng miệng',
     name: 'Chè Đậu Xanh Hạt Sen',
     description: 'Chè truyền thống với hạt sen bùi béo, đậu xanh nhuyễn và cốt dừa thanh mát.',
