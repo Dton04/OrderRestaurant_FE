@@ -15,7 +15,7 @@ interface Dish {
 
 const DISHES: Dish[] = [
   {
-    id: '1',
+    id: '13',
     category: 'Khai vị',
     name: 'Gỏi Cuốn Tôm Thịt',
     description: 'Bánh tráng cuộn tôm thịt, rau thơm, bún mỏng dùng kèm tương đậu phộng đậm đà.',
@@ -25,7 +25,7 @@ const DISHES: Dish[] = [
     badgeColor: 'bg-orange-100 text-orange-600',
   },
   {
-    id: '2',
+    id: '12',
     category: 'Khai vị',
     name: 'Nem Rán Hà Nội',
     description: 'Nem rán giòn rụm với nhân thịt heo băm, mộc nhĩ, miến và rau củ.',
@@ -33,7 +33,7 @@ const DISHES: Dish[] = [
     image: 'https://icdn.one/upload/2020/11/13/20201113061759-f9295f1c.jpg',
   },
   {
-    id: '3',
+    id: '14',
     category: 'Món chính',
     name: 'Phở Bò Truyền Thống',
     description: 'Nước dùng hầm xương ngọt thanh, bánh phở mềm cùng thịt bò tái nạm chín.',
@@ -43,7 +43,7 @@ const DISHES: Dish[] = [
     badgeColor: 'bg-green-500 text-white',
   },
   {
-    id: '4',
+    id: '15',
     category: 'Món chính',
     name: 'Bún Chả Quạt',
     description: 'Thịt heo nướng than hoa thơm lừng, ăn kèm bún tươi và nước mắm chua ngọt.',
@@ -51,7 +51,7 @@ const DISHES: Dish[] = [
     image: 'https://dulichninhbinh.com.vn/mypicture/images/amthuc/bun-cha-quat-ninh-binh.jpg',
   },
   {
-    id: '5',
+    id: '16',
     category: 'Món chính',
     name: 'Cơm Tấm Sườn Bì',
     description: 'Cơm tấm dẻo mặn mà cùng sườn nướng mật ong, bì chả và mỡ hành thơm lừng.',
@@ -61,7 +61,7 @@ const DISHES: Dish[] = [
     badgeColor: 'bg-red-100 text-red-600',
   },
   {
-    id: '6',
+    id: '17',
     category: 'Đồ uống',
     name: 'Trà Đá Dịp Hè',
     description: 'Trà đá lài thơm mát giải khát tuyệt vời cho những ngày nắng nóng.',
@@ -69,7 +69,7 @@ const DISHES: Dish[] = [
     image: 'https://file.hstatic.net/200000426635/file/tra_da_via_he_2_1eb5837e7d1843f0ad08cd15c898b674_grande.jpg',
   },
   {
-    id: '7',
+    id: '18',
     category: 'Đồ uống',
     name: 'Cà Phê Sữa Đá',
     description: 'Cà phê phin truyền thống Việt Nam hòa quyện cùng sữa đặc béo ngậy.',
@@ -79,7 +79,7 @@ const DISHES: Dish[] = [
     badgeColor: 'bg-orange-100 text-orange-600',
   },
   {
-    id: '8',
+    id: '19',
     category: 'Tráng miệng',
     name: 'Chè Đậu Xanh Hạt Sen',
     description: 'Chè truyền thống với hạt sen bùi béo, đậu xanh nhuyễn và cốt dừa thanh mát.',
@@ -141,17 +141,28 @@ const TableMenuPage: React.FC = () => {
   const handlePlaceOrder = () => {
     if (totalItemsCount === 0) return;
 
-    // In a real app, you'd make an API call here.
-    console.log("Placing order for Table 12", { items: cartItems, total });
+    // 1. Xác định ID bàn thực tế từ Database (Prisma Studio)
+    // Dựa vào ảnh bạn gửi, bàn số 5 có ID là 6 (kiểu Number/BigInt)
+    const actualTableId = 6;
 
-    // Navigate to checkout/confirmation page with state
+    // 2. Log ra console để Dino dễ kiểm tra trước khi chuyển trang
+    console.log("🚀 Đang chuẩn bị đơn hàng cho Bàn ID:", actualTableId);
+    console.log("📦 Danh sách món ăn:", cartItems);
+
+    // 3. Điều hướng sang trang Checkout với đầy đủ state sạch
     navigate('/checkout', {
       state: {
-        items: cartItems,
+        items: cartItems.map(item => ({
+          id: Number(item.id),       // Đảm bảo ID món ăn là số
+          name: item.name,
+          price: item.price,
+          quantity: item.quantity,
+          image: item.image
+        })),
         subtotal,
         tax,
         total,
-        table: '12'
+        table: actualTableId         // Gửi số 6 (Number), không gửi '12' (String)
       }
     });
   };
@@ -166,7 +177,7 @@ const TableMenuPage: React.FC = () => {
             <div className="min-w-[36px] min-h-[36px] w-9 h-9 rounded-xl bg-[#ef5b1b] text-white flex items-center justify-center font-bold">
               OR
             </div>
-            <h1 className="text-xl font-extrabold text-gray-900 tracking-tight truncate">OrderRestaurant</h1>
+            <h1 className="text-xl font-extrabold text-gray-900 tracking-tight truncate">Order</h1>
           </div>
 
           {/* Navigation */}

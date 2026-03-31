@@ -9,11 +9,11 @@ const ServePage: React.FC = () => {
   const [note, setNote] = useState<string>('');
 
   const tables = [
-    { id: '10', label: '10', status: 'FREE' },
-    { id: '08', label: '08', status: 'FREE' },
-    { id: '09', label: '09', status: 'FREE' },
-    { id: '11', label: '11', status: 'FREE' },
-    { id: '12', label: '12', status: 'FREE' },
+    { id: '10', label: '1', status: 'FREE' },
+    { id: '08', label: '2', status: 'FREE' },
+    { id: '09', label: '3', status: 'FREE' },
+    { id: '11', label: '4', status: 'FREE' },
+    { id: '12', label: '5', status: 'FREE' },
     { id: 'vip1', label: 'VIP 1', status: 'FREE' },
     { id: 'vip2', label: 'VIP 2', status: 'FREE' },
     { id: '15', label: '15', status: 'FREE' },
