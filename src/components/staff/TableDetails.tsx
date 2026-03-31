@@ -1,13 +1,19 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 
-const TableDetails: React.FC<{ table: any }> = ({ table }) => {
-  const [guestCount, setGuestCount] = useState(0);
+type TableStatus = 'FREE' | 'OCCUPIED' | 'RESERVED' | 'CLEANING';
 
-  useEffect(() => {
-    if (table) {
-      setGuestCount(typeof table.guests === 'number' ? table.guests : 0);
-    }
-  }, [table]);
+type StaffTable = {
+  id: string | number;
+  table_number?: string;
+  capacity?: number;
+  status?: TableStatus | string;
+  guests?: number;
+};
+
+const TableDetails: React.FC<{ table: StaffTable | null }> = ({ table }) => {
+  const [guestCount, setGuestCount] = useState(() =>
+    table && typeof table.guests === 'number' ? table.guests : 0,
+  );
 
   const incrementGuest = () => {
     if (!table) return;

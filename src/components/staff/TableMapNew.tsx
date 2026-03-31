@@ -1,22 +1,36 @@
 import React, { useEffect, useState } from 'react';
 import { tableApi } from '../../api/table';
 
-const statusColor = {
+type TableStatus = 'FREE' | 'OCCUPIED' | 'RESERVED' | 'CLEANING';
+
+type StaffTable = {
+  id: string | number;
+  table_number?: string;
+  capacity?: number;
+  status?: TableStatus | string;
+  guests?: number;
+};
+
+const statusColor: Record<TableStatus, string> = {
   FREE: 'bg-green-500 text-white',
   OCCUPIED: 'bg-orange-500 text-white',
   RESERVED: 'bg-indigo-500 text-white',
   CLEANING: 'bg-cyan-500 text-white',
 };
 
-const statusLabel = {
+const statusLabel: Record<TableStatus, string> = {
   FREE: 'Free',
   OCCUPIED: 'Occupied',
   RESERVED: 'Reserved',
   CLEANING: 'Cleaning',
 };
 
-const TableMapNew: React.FC<{ onSelectTable: (table: any) => void }> = ({ onSelectTable }) => {
-  const [tables, setTables] = useState<any[]>([]);
+function isTableStatus(value: unknown): value is TableStatus {
+  return value === 'FREE' || value === 'OCCUPIED' || value === 'RESERVED' || value === 'CLEANING';
+}
+
+const TableMapNew: React.FC<{ onSelectTable: (table: StaffTable) => void }> = ({ onSelectTable }) => {
+  const [tables, setTables] = useState<StaffTable[]>([]);
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -28,7 +42,7 @@ const TableMapNew: React.FC<{ onSelectTable: (table: any) => void }> = ({ onSele
         const payload = await tableApi.findAll();
 
         if (Array.isArray(payload)) {
-          setTables(payload);
+          setTables(payload as StaffTable[]);
         } else {
           setTables([]);
           console.warn('TableMapNew: unexpected response payload from tableApi.findAll()', payload);
@@ -57,17 +71,22 @@ const TableMapNew: React.FC<{ onSelectTable: (table: any) => void }> = ({ onSele
   return (
     <div className="grid grid-cols-3 md:grid-cols-4 gap-6 pt-5">
       {tables.map((t) => (
+        (() => {
+          const status: TableStatus = isTableStatus(t.status) ? t.status : 'FREE';
+          return (
         <div
-          key={t.id}
-          className={`rounded-xl p-4 shadow-md cursor-pointer flex flex-col justify-between min-h-[110px] ${statusColor[t.status as keyof typeof statusColor]}`}
+          key={String(t.id)}
+          className={`rounded-xl p-4 shadow-md cursor-pointer flex flex-col justify-between min-h-[110px] ${statusColor[status]}`}
           onClick={() => onSelectTable(t)}
         >
           <div className="flex justify-between items-center mb-2">
             <span className="text-2xl font-bold opacity-80">{t.table_number || t.id}</span>
-            <span className="text-lg">{t.guests || ''}</span>
+            <span className="text-lg">{typeof t.guests === 'number' ? t.guests : ''}</span>
           </div>
-          <div className="text-xs font-bold uppercase opacity-80">{statusLabel[t.status as keyof typeof statusLabel] || 'Unknown'}</div>
+          <div className="text-xs font-bold uppercase opacity-80">{statusLabel[status]}</div>
         </div>
+          );
+        })()
       ))}
     </div>
   );
