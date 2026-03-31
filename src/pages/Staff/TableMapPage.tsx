@@ -4,8 +4,18 @@ import StaffTopBar from '../../components/staff/StaffTopBar';
 import TableMapNew from '../../components/staff/TableMapNew';
 import TableDetails from '../../components/staff/TableDetails';
 
+type TableStatus = 'FREE' | 'OCCUPIED' | 'RESERVED' | 'CLEANING';
+
+type StaffTable = {
+  id: string | number;
+  table_number?: string;
+  capacity?: number;
+  status?: TableStatus | string;
+  guests?: number;
+};
+
 const TableMapPage: React.FC = () => {
-  const [selectedTable, setSelectedTable] = useState<any>(null);
+  const [selectedTable, setSelectedTable] = useState<StaffTable | null>(null);
 
   return (
     <div className="min-h-screen bg-surface text-on-surface overflow-hidden">
@@ -27,7 +37,10 @@ const TableMapPage: React.FC = () => {
             </div>
 
             <div className="rounded-2xl p-5 bg-white border border-zinc-100 shadow-sm">
-              <TableDetails table={selectedTable} />
+              <TableDetails
+                key={selectedTable ? String(selectedTable.id) : 'none'}
+                table={selectedTable}
+              />
             </div>
           </div>
         </section>
