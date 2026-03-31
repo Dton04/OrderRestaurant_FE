@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+﻿import React, { useEffect, useMemo, useState } from 'react';
 import {
   Search,
   Plus,
@@ -9,24 +9,27 @@ import {
   Loader2,
   Image as ImageIcon,
 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import StaffSidebarNew from '../../components/staff/StaffSidebarNew';
 import StaffTopBar from '../../components/staff/StaffTopBar';
 import { dishApi } from '../../api/dish';
 import { categoryApi } from '../../api/category';
+import orderApi from '../../api/order';
 import type { Dish } from '../../types/dish';
 import type { Category } from '../../types/category';
+import type { BillingDraft, BillingDraftItem } from '../../types/billing';
+import type { CreateOrderDto } from '../../types/order';
 
-type OrderItem = {
-  id: number;
-  name: string;
-  quantity: number;
-  unitPrice: number;
-  note: string;
-  accent: string;
+type OrderItem = BillingDraftItem;
+
+type StoredUser = {
+  id?: string | number;
 };
 
 const categoryTabLabels = ['Khai vị', 'Món chính', 'Đồ uống'] as const;
 const orderAccentPalette = ['#ac3509', '#006972', '#ff7043'];
+const BILLING_DRAFT_KEY = 'staff.billingDraft';
+const ORDER_ID_STORAGE_KEY = 'staff.currentOrderId';
 
 const currency = (value: number) =>
   `${new Intl.NumberFormat('vi-VN').format(value)}đ`;
@@ -36,15 +39,48 @@ const createDraftOrderCode = () => {
   return `#NEW-${seed}`;
 };
 
+const parseStoredUser = (): StoredUser | null => {
+  const raw = localStorage.getItem('user');
+  if (!raw) {
+    return null;
+  }
+
+  try {
+    return JSON.parse(raw) as StoredUser;
+  } catch {
+    return null;
+  }
+};
+
+const toNumber = (value: number | string | null | undefined) => {
+  if (typeof value === 'number') {
+    return value;
+  }
+
+  if (typeof value === 'string') {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : 0;
+  }
+
+  return 0;
+};
+
 const ActiveOrdersPage: React.FC = () => {
+  const navigate = useNavigate();
   const [categories, setCategories] = useState<Category[]>([]);
   const [dishes, setDishes] = useState<Dish[]>([]);
   const [activeCategoryId, setActiveCategoryId] = useState<number | null>(null);
   const [query, setQuery] = useState('');
   const [orderItems, setOrderItems] = useState<OrderItem[]>([]);
   const [draftOrderCode] = useState(createDraftOrderCode);
+  const [orderId, setOrderId] = useState<string | null>(
+    localStorage.getItem(ORDER_ID_STORAGE_KEY),
+  );
+  const [submittingOrder, setSubmittingOrder] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [feedback, setFeedback] = useState<string | null>(null);
+  const [feedbackType, setFeedbackType] = useState<'success' | 'error' | null>(null);
 
   useEffect(() => {
     const fetchMenu = async () => {
@@ -91,8 +127,30 @@ const ActiveOrdersPage: React.FC = () => {
   );
   const vat = Math.round(subtotal * 0.08);
   const total = subtotal + vat;
+  const discountAmount = 0;
+
+  useEffect(() => {
+    const draft: BillingDraft = {
+      code: draftOrderCode,
+      orderId,
+      items: orderItems,
+      totalAmount: subtotal,
+      discountAmount,
+      finalAmount: total,
+      vat,
+    };
+
+    localStorage.setItem(BILLING_DRAFT_KEY, JSON.stringify(draft));
+  }, [discountAmount, draftOrderCode, orderId, orderItems, subtotal, total, vat]);
+
+  const invalidateExistingOrder = () => {
+    setOrderId(null);
+    localStorage.removeItem(ORDER_ID_STORAGE_KEY);
+  };
 
   const addToOrder = (item: Dish) => {
+    invalidateExistingOrder();
+    setFeedback(null);
     setOrderItems((current) => {
       const existing = current.find((entry) => entry.id === item.id);
 
@@ -119,13 +177,102 @@ const ActiveOrdersPage: React.FC = () => {
   };
 
   const updateNote = (id: number, note: string) => {
+    invalidateExistingOrder();
+    setFeedback(null);
     setOrderItems((current) =>
       current.map((item) => (item.id === id ? { ...item, note } : item)),
     );
   };
 
   const removeItem = (id: number) => {
+    invalidateExistingOrder();
+    setFeedback(null);
     setOrderItems((current) => current.filter((item) => item.id !== id));
+  };
+
+  const createOrderIfNeeded = async () => {
+    if (orderItems.length === 0) {
+      return null;
+    }
+
+    if (orderId) {
+      return orderId;
+    }
+
+    const user = parseStoredUser();
+    const payload: CreateOrderDto = {
+      staff_id: user?.id,
+      total_amount: subtotal,
+      discount_amount: discountAmount,
+      final_amount: total,
+      status: 'PENDING',
+      items: orderItems.map((item) => ({
+        dish_id: item.id,
+        quantity: item.quantity,
+        price_at_order: item.unitPrice,
+      })),
+    };
+
+    const order = await orderApi.create(payload);
+    const createdOrderId = String(order.id);
+    const createdFinalAmount = toNumber(order.final_amount);
+    const createdSubtotal = toNumber(order.total_amount);
+    const createdDiscount = toNumber(order.discount_amount);
+
+    setOrderId(createdOrderId);
+    localStorage.setItem(ORDER_ID_STORAGE_KEY, createdOrderId);
+    localStorage.setItem(
+      BILLING_DRAFT_KEY,
+      JSON.stringify({
+        code: draftOrderCode,
+        orderId: createdOrderId,
+        items: orderItems,
+        totalAmount: createdSubtotal || subtotal,
+        discountAmount: createdDiscount || discountAmount,
+        finalAmount: createdFinalAmount || total,
+        vat,
+      } satisfies BillingDraft),
+    );
+
+    return createdOrderId;
+  };
+
+  const handleGoToBilling = async () => {
+    try {
+      setSubmittingOrder(true);
+      setError(null);
+      setFeedback(null);
+      await createOrderIfNeeded();
+      navigate('/staff/billing');
+    } catch (err) {
+      console.error('Failed to create order before payment:', err);
+      setError('Không thể tạo order từ backend. Vui lòng kiểm tra API /orders.');
+    } finally {
+      setSubmittingOrder(false);
+    }
+  };
+
+  const handleSendToKitchen = async () => {
+    try {
+      setSubmittingOrder(true);
+      setError(null);
+      setFeedback(null);
+
+      const currentOrderId = await createOrderIfNeeded();
+      if (!currentOrderId) {
+        return;
+      }
+
+      await orderApi.update(currentOrderId, { status: 'IN_PROGRESS' });
+      setFeedbackType('success');
+      setFeedback(`Đã gửi bếp thành công cho đơn ${draftOrderCode}.`);
+    } catch (err) {
+      console.error('Failed to send order to kitchen:', err);
+      setFeedbackType('error');
+      setFeedback('Không thể gửi bếp. Vui lòng kiểm tra lại API /orders.');
+    } finally {
+      setSubmittingOrder(false);
+    }
   };
 
   return (
@@ -197,7 +344,7 @@ const ActiveOrdersPage: React.FC = () => {
               <div className="flex min-h-[320px] flex-col items-center justify-center rounded-2xl border border-red-100 bg-red-50 p-8 text-center">
                 <p className="font-semibold text-red-600">{error}</p>
                 <p className="mt-2 text-sm text-red-500">
-                  Kiểm tra kết nối API và đăng nhập staff.
+                  Kiểm tra kết nối API, đăng nhập staff và endpoint /orders.
                 </p>
               </div>
             ) : filteredMenu.length === 0 ? (
@@ -333,20 +480,35 @@ const ActiveOrdersPage: React.FC = () => {
                 <span className="text-[#ac3509]">{currency(total)}</span>
               </div>
             </div>
+
+            {feedback ? (
+              <div
+                className={`rounded-2xl px-4 py-3 text-sm font-medium ${
+                  feedbackType === 'success'
+                    ? 'bg-emerald-50 text-emerald-700'
+                    : 'bg-red-50 text-red-700'
+                }`}
+              >
+                {feedback}
+              </div>
+            ) : null}
+
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <button
-                disabled={orderItems.length === 0}
+                disabled={orderItems.length === 0 || submittingOrder}
+                onClick={handleSendToKitchen}
                 className="flex items-center justify-center gap-2 rounded-xl border-2 border-[#ac3509] py-4 text-sm font-bold uppercase tracking-wider text-[#ac3509] transition-all hover:bg-[#ac3509]/5 active:scale-95 disabled:cursor-not-allowed disabled:border-[#d8a798] disabled:text-[#d8a798] disabled:hover:bg-transparent"
               >
                 <ChefHat size={18} />
-                Gửi bếp
+                {submittingOrder ? 'Đang gửi...' : 'Gửi bếp'}
               </button>
               <button
-                disabled={orderItems.length === 0}
+                disabled={orderItems.length === 0 || submittingOrder}
+                onClick={handleGoToBilling}
                 className="flex items-center justify-center gap-2 rounded-xl bg-gradient-to-br from-[#ac3509] to-[#ff7043] py-4 text-sm font-bold uppercase tracking-wider text-white shadow-lg transition-all hover:shadow-orange-200 active:scale-95 disabled:cursor-not-allowed disabled:from-[#d8a798] disabled:to-[#e7b7a8] disabled:shadow-none"
               >
                 <CreditCard size={18} />
-                Thanh toán
+                {submittingOrder ? 'Đang tạo order...' : 'Thanh toán'}
               </button>
             </div>
           </div>
