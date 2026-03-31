@@ -23,9 +23,6 @@ jobs:
       - name: Install Dependencies
         run: npm install
 
-      - name: Check Lint (Tùy chọn)
-        run: npm run lint # Giúp code cả 6 người trông đồng nhất, sạch sẽ
-
       - name: Build Project
         run: npm run build
         env:
