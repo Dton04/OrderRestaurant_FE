@@ -42,6 +42,8 @@ import MenuManagementPage from './pages/Admin/MenuManagementPage';
 import CategoryManagementPage from './pages/Admin/CategoryManagementPage';
 import TableManagementPage from './pages/Admin/TableManagementPage';
 import TableMapPage from './pages/Staff/TableMapPage';
+import ActiveOrdersPage from './pages/Staff/ActiveOrdersPage';
+import BillingPage from './pages/Staff/BillingPage';
 
 function RequireAuth({ children }: { children: React.ReactNode }) {
   const location = useLocation();
@@ -118,6 +120,22 @@ function App() {
           element={
             <RequireStaff>
               <TableMapPage />
+            </RequireStaff>
+          }
+        />
+        <Route
+          path="/staff/active-orders"
+          element={
+            <RequireStaff>
+              <ActiveOrdersPage />
+            </RequireStaff>
+          }
+        />
+        <Route
+          path="/staff/billing"
+          element={
+            <RequireStaff>
+              <BillingPage />
             </RequireStaff>
           }
         />
