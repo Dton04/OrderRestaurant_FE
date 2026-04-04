@@ -41,6 +41,7 @@ import DashboardPage from './pages/Admin/DashboardPage';
 import MenuManagementPage from './pages/Admin/MenuManagementPage';
 import CategoryManagementPage from './pages/Admin/CategoryManagementPage';
 import TableManagementPage from './pages/Admin/TableManagementPage';
+import LoyaltyManagementPage from './pages/Admin/LoyaltyManagementPage';
 import TableMapPage from './pages/Staff/TableMapPage';
 import ActiveOrdersPage from './pages/Staff/ActiveOrdersPage';
 import BillingPage from './pages/Staff/BillingPage';
@@ -112,6 +113,7 @@ function App() {
           <Route path="menu" element={<MenuManagementPage />} />
           <Route path="categories" element={<CategoryManagementPage />} />
           <Route path="tables" element={<TableManagementPage />} />
+          <Route path="loyalty" element={<LoyaltyManagementPage />} />
           <Route path="reports" element={<DashboardPage />} />
           <Route path="settings" element={<DashboardPage />} />
         </Route>
