@@ -13,4 +13,5 @@ export interface Table extends CreateTableDto {
   guests?: number;
   created_at?: string;
   updated_at?: string;
+  deleted_at?: string | null;
 }
