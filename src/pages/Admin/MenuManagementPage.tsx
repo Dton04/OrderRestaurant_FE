@@ -22,6 +22,8 @@ const MenuManagementPage: React.FC = () => {
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedCategoryId, setSelectedCategoryId] = useState<number | 'all'>('all');
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -52,6 +54,13 @@ const MenuManagementPage: React.FC = () => {
   const getCategoryName = (id: number) => {
     return categories.find(c => c.id === id)?.name || `ID: ${id}`;
   };
+
+  const filteredDishes = dishes.filter((dish) => {
+    const matchesSearch = dish.name.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesCategory =
+      selectedCategoryId === 'all' || String(dish.category_id) === String(selectedCategoryId);
+    return matchesSearch && matchesCategory;
+  });
 
   const handleAddDish = () => {
     setSelectedDish(null);
@@ -107,14 +116,27 @@ const MenuManagementPage: React.FC = () => {
               <input 
                 type="text" 
                 placeholder="Tìm tên món ăn..." 
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full pl-9 pr-4 py-2 bg-gray-50 border-none rounded-xl text-[11px] focus:ring-1 focus:ring-orange-500 transition-all outline-none"
               />
             </div>
-            <button className="flex items-center gap-1.5 px-3 py-2 bg-gray-50 text-gray-600 rounded-xl text-[10px] font-black hover:bg-gray-100 transition-colors uppercase tracking-tight">
-              <Filter size={14} />
-              <span>Tất cả danh mục</span>
-              <ChevronRight size={12} className="rotate-90" />
-            </button>
+            <div className="relative">
+              <Filter className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={14} />
+              <select
+                value={selectedCategoryId}
+                onChange={(e) => setSelectedCategoryId(e.target.value === 'all' ? 'all' : Number(e.target.value))}
+                className="pl-9 pr-8 py-2 bg-gray-50 text-gray-600 rounded-xl text-[10px] font-black hover:bg-gray-100 transition-colors uppercase tracking-tight outline-none border-none appearance-none cursor-pointer"
+              >
+                <option value="all">Tất cả danh mục</option>
+                {categories.map((cat) => (
+                  <option key={cat.id} value={cat.id}>
+                    {cat.name.toUpperCase()}
+                  </option>
+                ))}
+              </select>
+              <ChevronRight size={12} className="absolute right-3 top-1/2 -translate-y-1/2 rotate-90 text-gray-400 pointer-events-none" />
+            </div>
           </div>
           <div className="flex gap-1.5">
             <button className="p-2 bg-gray-50 text-gray-500 rounded-xl hover:bg-gray-100 transition-colors">
@@ -155,7 +177,7 @@ const MenuManagementPage: React.FC = () => {
                 </tr>
               </thead>
               <tbody className="text-[11px]">
-                {dishes.map((dish) => (
+                {filteredDishes.map((dish) => (
                   <tr key={dish.id} className="border-t border-gray-50 group hover:bg-gray-50/40 transition-colors">
                     <td className="py-3">
                       {dish.image_url ? (
@@ -216,7 +238,7 @@ const MenuManagementPage: React.FC = () => {
         />
 
         <div className="flex justify-between items-center pt-5 border-t border-gray-50 text-[10px] font-bold">
-          <p className="text-gray-400">Hiển thị <span className="text-gray-700">1-{dishes.length}</span> / <span className="text-gray-700">{dishes.length}</span> món</p>
+          <p className="text-gray-400">Hiển thị <span className="text-gray-700">1-{filteredDishes.length}</span> / <span className="text-gray-700">{filteredDishes.length}</span> món</p>
           <div className="flex gap-1.5">
             <button className="p-1.5 border border-gray-100 rounded-lg text-gray-400 hover:bg-gray-50 transition-colors">
               <ChevronLeft size={14} />

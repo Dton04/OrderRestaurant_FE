@@ -1,0 +1,29 @@
+name: ReactJS Frontend CI
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6.0.2
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6.3.0
+        with:
+          node-version: '22' # Hoặc bản Node nhóm đang dùng
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm install
+
+      - name: Build Project
+        run: npm run build
+        env:
+          REACT_APP_API_URL: ${{ secrets.REACT_APP_API_URL }}
