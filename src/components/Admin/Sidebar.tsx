@@ -25,7 +25,7 @@ const AdminSidebar: React.FC = () => {
   const navItems = [
     { icon: LayoutDashboard, label: 'Dashboard', path: '/admin/dashboard' },
     { icon: Users, label: 'Nhân viên', path: '/admin/users' },
-    { icon: Users, label: 'Quản lý bàn', path: '/admin/tables' },
+    { icon: Users, label: 'Quản lý bàn', path: '/admin/tables'},
     { icon: UtensilsCrossed, label: 'Thực đơn', path: '/admin/menu' },
     { icon: UtensilsCrossed, label: 'Danh mục', path: '/admin/categories' },
     { icon: BarChart3, label: 'Báo cáo', path: '/admin/reports' },
