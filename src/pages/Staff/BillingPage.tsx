@@ -1,7 +1,6 @@
 ﻿import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   Banknote,
-  CreditCard,
   QrCode,
   Check,
   CheckCircle2,
@@ -46,17 +45,22 @@ type RevenueStats = {
 };
 
 const BILLING_DRAFT_KEY = 'staff.billingDraft';
+const ACTIVE_ORDER_TABLE_KEY = 'staff.activeOrderTable';
+
+type SelectedTableInfo = {
+  id?: string | number;
+  table_number?: string;
+};
 const methodCards: MethodCard[] = [
   { id: 'CASH', label: 'Tiền mặt', icon: Banknote },
-  { id: 'CARD', label: 'Thẻ ngân hàng', icon: CreditCard },
-  { id: 'MOMO', label: 'MoMo / VNPay', icon: QrCode },
+  { id: 'VNPAY', label: 'VNPay', icon: QrCode },
 ];
 
 const breakdownStyles: Record<PaymentMethod, { label: string; color: string }> = {
   CASH: { label: 'Tiền mặt', color: '#ac3509' },
   CARD: { label: 'Thẻ / Bank', color: '#fdba74' },
-  MOMO: { label: 'MoMo / VNP', color: '#d4d4d8' },
-  VNPAY: { label: 'MoMo / VNP', color: '#d4d4d8' },
+  MOMO: { label: 'MoMo', color: '#d4d4d8' },
+  VNPAY: { label: 'VNPay', color: '#d4d4d8' },
 };
 
 const emptyDraft: BillingDraft = {
@@ -76,8 +80,7 @@ const emptyStats: RevenueStats = {
   trendPercent: 0,
   breakdown: [
     { label: 'Tiền mặt', method: 'CASH', amount: 0, percent: 0, color: '#ac3509' },
-    { label: 'Thẻ / Bank', method: 'CARD', amount: 0, percent: 0, color: '#fdba74' },
-    { label: 'MoMo / VNP', method: 'MOMO', amount: 0, percent: 0, color: '#d4d4d8' },
+    { label: 'VNPay', method: 'VNPAY', amount: 0, percent: 0, color: '#d4d4d8' },
   ],
 };
 
@@ -129,14 +132,17 @@ const buildBreakdown = (
 ): RevenueStats['breakdown'] => {
   const grouped = new Map<PaymentMethod, number>([
     ['CASH', 0],
-    ['CARD', 0],
-    ['MOMO', 0],
+    ['VNPAY', 0],
   ]);
 
   payments.forEach((payment) => {
     const amount = toNumber(payment.amount);
-    if (payment.method === 'VNPAY') {
-      grouped.set('MOMO', (grouped.get('MOMO') || 0) + amount);
+    if (payment.method === 'MOMO') {
+      grouped.set('VNPAY', (grouped.get('VNPAY') || 0) + amount);
+      return;
+    }
+
+    if (payment.method === 'CARD') {
       return;
     }
 
@@ -145,8 +151,7 @@ const buildBreakdown = (
 
   return [
     { method: 'CASH' as const },
-    { method: 'CARD' as const },
-    { method: 'MOMO' as const },
+    { method: 'VNPAY' as const },
   ].map(({ method }) => ({
     method,
     label: breakdownStyles[method].label,
@@ -177,6 +182,28 @@ const buildDonutBackground = (breakdown: RevenueStats['breakdown']) => {
   return `conic-gradient(${segments.join(', ')})`;
 };
 
+const extractApiErrorMessage = (error: unknown) => {
+  if (typeof error !== 'object' || error === null) {
+    return null;
+  }
+
+  const response = (error as { response?: { data?: unknown } }).response;
+  if (!response || typeof response.data !== 'object' || response.data === null) {
+    return null;
+  }
+
+  const data = response.data as { message?: unknown };
+  if (typeof data.message === 'string') {
+    return data.message;
+  }
+
+  if (Array.isArray(data.message) && data.message.length > 0) {
+    return String(data.message[0]);
+  }
+
+  return null;
+};
+
 const BillingPage: React.FC = () => {
   const navigate = useNavigate();
   const [selectedMethod, setSelectedMethod] = useState<PaymentMethod>('CASH');
@@ -203,6 +230,19 @@ const BillingPage: React.FC = () => {
       };
     } catch {
       return emptyDraft;
+    }
+  }, []);
+
+  const selectedTable = useMemo<SelectedTableInfo | null>(() => {
+    const raw = localStorage.getItem(ACTIVE_ORDER_TABLE_KEY);
+    if (!raw) {
+      return null;
+    }
+
+    try {
+      return JSON.parse(raw) as SelectedTableInfo;
+    } catch {
+      return null;
     }
   }, []);
 
@@ -292,13 +332,34 @@ const BillingPage: React.FC = () => {
     loadRevenueStats();
   }, [loadRevenueStats]);
 
-  const isMomo = selectedMethod === 'MOMO';
-  const effectiveStatus: PaymentStatus = isMomo ? 'PENDING' : 'SUCCESS';
+  const isVnpay = selectedMethod === 'VNPAY';
+  const effectiveStatus: PaymentStatus = isVnpay ? 'PENDING' : 'SUCCESS';
   const updatedAtLabel = new Intl.DateTimeFormat('vi-VN', {
     hour: '2-digit',
     minute: '2-digit',
   }).format(new Date());
   const donutBackground = buildDonutBackground(stats.breakdown);
+
+  const updateOrderPaidStatus = async (orderIdValue: string | number) => {
+    const statusCandidates = ['PAID', 'COMPLETED', 'SUCCESS', 'IN_PROGRESS'];
+    let lastError: unknown = null;
+
+    for (const status of statusCandidates) {
+      try {
+        await orderApi.update(orderIdValue, {
+          status,
+          total_amount: draft.totalAmount,
+          discount_amount: draft.discountAmount,
+          final_amount: draft.finalAmount,
+        });
+        return;
+      } catch (error) {
+        lastError = error;
+      }
+    }
+
+    throw lastError;
+  };
 
   const handleConfirmPayment = async () => {
     if (!draft.orderId) {
@@ -321,26 +382,26 @@ const BillingPage: React.FC = () => {
         transaction_id: undefined,
       });
 
-      if (!isMomo) {
-        await orderApi.update(draft.orderId, {
-          status: 'PAID',
-          final_amount: draft.finalAmount,
-        });
+      if (!isVnpay) {
+        await updateOrderPaidStatus(String(draft.orderId));
       }
 
       setPaymentCompleted(true);
       setFeedbackType('success');
       setFeedback(
-        isMomo
-          ? `Đã tạo payment MOMO ở trạng thái PENDING. Payment ID: ${String(payment.id)}. Cần endpoint init/callback từ backend để hoàn tất giao dịch.`
+        isVnpay
+          ? `Đã tạo payment VNPay ở trạng thái PENDING. Payment ID: ${String(payment.id)}. Cần endpoint init/callback từ backend để hoàn tất giao dịch.`
           : `Thanh toán thành công. Payment ID: ${String(payment.id)}. Order đã được cập nhật sang trạng thái PAID.`,
       );
       await loadRevenueStats();
     } catch (error) {
       console.error('Failed to process payment:', error);
       setFeedbackType('error');
+      const apiMessage = extractApiErrorMessage(error);
       setFeedback(
-        'Không thể xử lý thanh toán. Vui lòng kiểm tra token, trạng thái order và API payment.',
+        apiMessage
+          ? `Không thể xử lý thanh toán: ${apiMessage}`
+          : 'Không thể xử lý thanh toán. Vui lòng kiểm tra token, trạng thái order và API payment.',
       );
     } finally {
       setSubmitting(false);
@@ -368,6 +429,14 @@ const BillingPage: React.FC = () => {
               </p>
             </div>
             <div className="flex gap-3">
+              {selectedTable ? (
+                <div className="flex items-center gap-3 rounded-xl bg-[#f3f4f5] px-4 py-2">
+                  <span className="h-3 w-3 rounded-full bg-[#ac3509]" />
+                  <span className="text-sm font-bold uppercase tracking-wider text-[#59413a]">
+                    Bàn: {selectedTable.table_number || selectedTable.id}
+                  </span>
+                </div>
+              ) : null}
               <div className="flex items-center gap-3 rounded-xl bg-[#f3f4f5] px-4 py-2">
                 <span className="h-3 w-3 rounded-full bg-[#ac3509]" />
                 <span className="text-sm font-bold uppercase tracking-wider text-[#59413a]">
@@ -453,7 +522,7 @@ const BillingPage: React.FC = () => {
                 <h3 className="mb-6 text-xl font-bold text-[#191c1d]">
                   Phương thức thanh toán
                 </h3>
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                   {methodCards.map((method) => {
                     const Icon = method.icon;
                     const selected = selectedMethod === method.id;
@@ -499,18 +568,18 @@ const BillingPage: React.FC = () => {
                     </span>
                   </div>
                   <p className="mt-2 text-sm text-[#59413a]">
-                    {isMomo
-                      ? 'MoMo hiện được tạo ở trạng thái PENDING để chờ callback xác nhận từ backend.'
-                      : 'Tiền mặt và thẻ ngân hàng được chốt SUCCESS ngay khi staff xác nhận thanh toán.'}
+                    {isVnpay
+                      ? 'VNPay hiện được tạo ở trạng thái PENDING để chờ callback xác nhận từ backend.'
+                      : 'Tiền mặt được chốt SUCCESS ngay khi staff xác nhận thanh toán.'}
                   </p>
                 </div>
 
-                {isMomo ? (
+                {isVnpay ? (
                   <div className="mt-4 rounded-2xl bg-sky-50 px-4 py-3 text-sm font-medium text-sky-800">
-                    MOMO hiện mới được hỗ trợ ở mức tạo record payment với trạng thái
+                    VNPay hiện mới được hỗ trợ ở mức tạo record payment với trạng thái
                     {' '}<code>PENDING</code>. Backend cần bổ sung{' '}
-                    <code>/payments/momo/init</code> và{' '}
-                    <code>/payments/momo/callback</code> để redirect sang MoMo và cập nhật kết quả giao dịch.
+                    <code>/payments/vnpay/init</code> và{' '}
+                    <code>/payments/vnpay/callback</code> để redirect sang VNPay và cập nhật kết quả giao dịch.
                   </div>
                 ) : null}
 
@@ -548,8 +617,8 @@ const BillingPage: React.FC = () => {
                       <CheckCircle2 size={18} />
                       {submitting
                         ? 'Đang xử lý...'
-                        : isMomo
-                          ? 'Tạo payment MOMO'
+                        : isVnpay
+                          ? 'Tạo payment VNPay'
                           : paymentCompleted
                             ? 'Đã thanh toán'
                             : 'Xác nhận thanh toán'}
