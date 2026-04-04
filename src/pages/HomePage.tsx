@@ -98,7 +98,7 @@ const HomePage: React.FC = () => {
             <a href="#features" className="hover:text-[#ef5b1b] transition-colors">
               Hệ thống bếp
             </a>
-            <a href="#solutions" className="hover:text-[#ef5b1b] transition-colors">
+            <a href="/admin/tables" className="hover:text-[#ef5b1b] transition-colors">
               Quản lý bàn
             </a>
             <a href="#reviews" className="hover:text-[#ef5b1b] transition-colors">

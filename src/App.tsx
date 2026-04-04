@@ -25,6 +25,34 @@ function RequireStaff({ children }: { children: React.ReactNode }) {
 
   return <>{children}</>;
 }
+
+function RequireChef({ children }: { children: React.ReactNode }) {
+  const location = useLocation();
+  const token = localStorage.getItem('token');
+  const userRaw = localStorage.getItem('user');
+  let role = '';
+  if (userRaw) {
+    try {
+      const parsed: unknown = JSON.parse(userRaw);
+      role =
+        parsed && typeof parsed === 'object' && 'role' in parsed
+          ? String((parsed as Record<string, unknown>).role || '')
+          : '';
+    } catch {
+      role = '';
+    }
+  }
+
+  if (!token) {
+    return <Navigate to="/login" replace state={{ from: location }} />;
+  }
+
+  if (role.toLowerCase() !== 'chef') {
+    return <Navigate to="/" replace />;
+  }
+
+  return <>{children}</>;
+}
 import {
   BrowserRouter as Router,
   Routes,
@@ -44,6 +72,9 @@ import TableManagementPage from './pages/Admin/TableManagementPage';
 import TableMapPage from './pages/Staff/TableMapPage';
 import ActiveOrdersPage from './pages/Staff/ActiveOrdersPage';
 import BillingPage from './pages/Staff/BillingPage';
+import ChefLayout from './components/Chef/Layout';
+import ChefDashboardPage from './pages/Chef/DashboardPage';
+import ChefHistoryPage from './pages/Chef/HistoryPage';
 
 function RequireAuth({ children }: { children: React.ReactNode }) {
   const location = useLocation();
@@ -139,6 +170,21 @@ function App() {
             </RequireStaff>
           }
         />
+
+        {/* Chef Routes */}
+        <Route
+          path="/chef"
+          element={
+            <RequireChef>
+              <ChefLayout />
+            </RequireChef>
+          }
+        >
+          <Route index element={<Navigate to="dashboard" replace />} />
+          <Route path="dashboard" element={<ChefDashboardPage />} />
+          <Route path="history" element={<ChefHistoryPage />} />
+        </Route>
+
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Router>
