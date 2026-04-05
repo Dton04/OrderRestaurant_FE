@@ -17,6 +17,7 @@ import StaffSidebarNew from '../../components/staff/StaffSidebarNew';
 import StaffTopBar from '../../components/staff/StaffTopBar';
 import paymentApi from '../../api/payment';
 import orderApi from '../../api/order';
+import { upsertLocalStaffOrder } from '../../utils/staffOrderStore';
 import type { BillingDraft } from '../../types/billing';
 import type { PaymentMethod, PaymentStatus, Payment } from '../../types/payment';
 
@@ -384,6 +385,15 @@ const BillingPage: React.FC = () => {
 
       if (!isVnpay) {
         await updateOrderPaidStatus(String(draft.orderId));
+        upsertLocalStaffOrder({
+          id: draft.orderId,
+          staff_id: getStoredUser()?.id ?? null,
+          table_id: selectedTable?.id ?? null,
+          total_amount: draft.totalAmount,
+          final_amount: draft.finalAmount,
+          status: 'COMPLETED',
+          updated_at: new Date().toISOString(),
+        });
       }
 
       setPaymentCompleted(true);
@@ -391,7 +401,7 @@ const BillingPage: React.FC = () => {
       setFeedback(
         isVnpay
           ? `Đã tạo payment VNPay ở trạng thái PENDING. Payment ID: ${String(payment.id)}. Cần endpoint init/callback từ backend để hoàn tất giao dịch.`
-          : `Thanh toán thành công. Payment ID: ${String(payment.id)}. Order đã được cập nhật sang trạng thái PAID.`,
+          : `Thanh toán thành công. Payment ID: ${String(payment.id)}. Order đã được cập nhật trạng thái thanh toán.`,
       );
       await loadRevenueStats();
     } catch (error) {

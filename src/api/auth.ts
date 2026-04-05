@@ -6,13 +6,36 @@ import type {
   RegisterResponse,
 } from '../types/auth';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+function removeTrailingSlash(url: string): string {
+  return url.replace(/\/+$/, '');
+}
+
+function resolveApiUrl(): string {
+  const configuredUrl = (import.meta.env.VITE_API_URL as string | undefined)?.trim();
+  if (configuredUrl) {
+    return removeTrailingSlash(configuredUrl);
+  }
+
+  if (import.meta.env.DEV) {
+    return '/api';
+  }
+
+  return 'http://localhost:3000';
+}
+
+const API_URL = resolveApiUrl();
+const COMMON_HEADERS = {
+  'Content-Type': 'application/json',
+};
 
 const api = axios.create({
   baseURL: API_URL,
-  headers: {
-    'Content-Type': 'application/json',
-  },
+  headers: COMMON_HEADERS,
+});
+
+const refreshClient = axios.create({
+  baseURL: API_URL,
+  headers: COMMON_HEADERS,
 });
 
 type RefreshResponse = {
@@ -43,11 +66,9 @@ async function refreshAccessToken(): Promise<string> {
     throw new Error('Missing refresh token');
   }
 
-  const response = await axios.post<RefreshResponse>(
-    `${API_URL}/auth/refresh`,
-    { refresh_token: refreshToken },
-    { headers: { 'Content-Type': 'application/json' } },
-  );
+  const response = await refreshClient.post<RefreshResponse>('/auth/refresh', {
+    refresh_token: refreshToken,
+  });
 
   localStorage.setItem('token', response.data.access_token);
   localStorage.setItem('refresh_token', response.data.refresh_token);
@@ -77,7 +98,8 @@ api.interceptors.response.use(
     const status: number | undefined = error?.response?.status;
     const url: string = String(originalRequest?.url || '');
 
-    const isAuthRequest = url.includes('/auth/login') || url.includes('/auth/register') || url.includes('/auth/refresh');
+    const isAuthRequest =
+      url.includes('/auth/login') || url.includes('/auth/register') || url.includes('/auth/refresh');
     if (!originalRequest || isAuthRequest || status !== 401) {
       return Promise.reject(error);
     }

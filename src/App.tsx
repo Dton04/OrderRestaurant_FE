@@ -1,5 +1,4 @@
-import React from 'react';
-import {
+﻿import {
   BrowserRouter as Router,
   Routes,
   Route,
@@ -15,20 +14,63 @@ import DashboardPage from './pages/Admin/DashboardPage';
 import MenuManagementPage from './pages/Admin/MenuManagementPage';
 import CategoryManagementPage from './pages/Admin/CategoryManagementPage';
 import TableManagementPage from './pages/Admin/TableManagementPage';
+import LoyaltyManagementPage from './pages/Admin/LoyaltyManagementPage';
 import TableMapPage from './pages/Staff/TableMapPage';
 import ActiveOrdersPage from './pages/Staff/ActiveOrdersPage';
+import OrderListPage from './pages/Staff/OrderListPage';
 import BillingPage from './pages/Staff/BillingPage';
 import ProfilePage from './pages/ProfilePage';
 import ChefLayout from './components/Chef/Layout';
 import ChefDashboardPage from './pages/Chef/DashboardPage';
 import ChefHistoryPage from './pages/Chef/HistoryPage';
-import LoyaltyManagementPage from './pages/Admin/LoyaltyManagementPage';
+import PreparationNotesPage from './pages/Chef/PreparationNotesPage';
+
+function RequireAuth({ children }: { children: React.ReactNode }) {
+  const location = useLocation();
+  const token = localStorage.getItem('token');
+
+  if (!token) {
+    return <Navigate to="/login" replace state={{ from: location }} />;
+  }
+
+  return <>{children}</>;
+}
+
+function RequireAdmin({ children }: { children: React.ReactNode }) {
+  const location = useLocation();
+  const token = localStorage.getItem('token');
+  const userRaw = localStorage.getItem('user');
+  let role = '';
+
+  if (userRaw) {
+    try {
+      const parsed: unknown = JSON.parse(userRaw);
+      role =
+        parsed && typeof parsed === 'object' && 'role' in parsed
+          ? String((parsed as Record<string, unknown>).role || '')
+          : '';
+    } catch {
+      role = '';
+    }
+  }
+
+  if (!token) {
+    return <Navigate to="/login" replace state={{ from: location }} />;
+  }
+
+  if (role.toLowerCase() !== 'admin') {
+    return <Navigate to="/" replace />;
+  }
+
+  return <>{children}</>;
+}
 
 function RequireStaff({ children }: { children: React.ReactNode }) {
   const location = useLocation();
   const token = localStorage.getItem('token');
   const userRaw = localStorage.getItem('user');
   let role = '';
+
   if (userRaw) {
     try {
       const parsed: unknown = JSON.parse(userRaw);
@@ -58,6 +100,7 @@ function RequireChef({ children }: { children: React.ReactNode }) {
   const userRaw = localStorage.getItem('user');
   let role = '';
   let roleId: number | null = null;
+
   if (userRaw) {
     try {
       const parsed: unknown = JSON.parse(userRaw);
@@ -65,10 +108,12 @@ function RequireChef({ children }: { children: React.ReactNode }) {
         parsed && typeof parsed === 'object' && 'role' in parsed
           ? String((parsed as Record<string, unknown>).role || '')
           : '';
+
       const parsedRoleId =
         parsed && typeof parsed === 'object' && 'role_id' in parsed
           ? (parsed as Record<string, unknown>).role_id
           : undefined;
+
       if (typeof parsedRoleId === 'number') {
         roleId = parsedRoleId;
       } else if (typeof parsedRoleId === 'string' && parsedRoleId.trim() !== '') {
@@ -77,6 +122,7 @@ function RequireChef({ children }: { children: React.ReactNode }) {
       }
     } catch {
       role = '';
+      roleId = null;
     }
   }
 
@@ -91,51 +137,13 @@ function RequireChef({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
-function RequireAuth({ children }: { children: React.ReactNode }) {
-  const location = useLocation();
-  const token = localStorage.getItem('token');
-
-  if (!token) {
-    return <Navigate to="/login" replace state={{ from: location }} />;
-  }
-
-  return <>{children}</>;
-}
-
-function RequireAdmin({ children }: { children: React.ReactNode }) {
-  const location = useLocation();
-  const token = localStorage.getItem('token');
-  const userRaw = localStorage.getItem('user');
-  let role = '';
-  if (userRaw) {
-    try {
-      const parsed: unknown = JSON.parse(userRaw);
-      role =
-        parsed && typeof parsed === 'object' && 'role' in parsed
-          ? String((parsed as Record<string, unknown>).role || '')
-          : '';
-    } catch {
-      role = '';
-    }
-  }
-
-  if (!token) {
-    return <Navigate to="/login" replace state={{ from: location }} />;
-  }
-
-  if (role.toLowerCase() !== 'admin') {
-    return <Navigate to="/" replace />;
-  }
-
-  return <>{children}</>;
-}
-
 function App() {
   return (
     <Router>
       <Routes>
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
+
         <Route
           path="/"
           element={
@@ -144,6 +152,7 @@ function App() {
             </RequireAuth>
           }
         />
+
         <Route
           path="/admin"
           element={
@@ -162,6 +171,7 @@ function App() {
           <Route path="reports" element={<DashboardPage />} />
           <Route path="settings" element={<ProfilePage />} />
         </Route>
+
         <Route
           path="/chef"
           element={
@@ -173,8 +183,10 @@ function App() {
           <Route index element={<Navigate to="dashboard" replace />} />
           <Route path="dashboard" element={<ChefDashboardPage />} />
           <Route path="history" element={<ChefHistoryPage />} />
+          <Route path="preparation" element={<PreparationNotesPage />} />
           <Route path="settings" element={<ProfilePage />} />
         </Route>
+
         <Route
           path="/staff/table-map"
           element={
@@ -188,6 +200,14 @@ function App() {
           element={
             <RequireStaff>
               <ActiveOrdersPage />
+            </RequireStaff>
+          }
+        />
+        <Route
+          path="/staff/order-list"
+          element={
+            <RequireStaff>
+              <OrderListPage />
             </RequireStaff>
           }
         />
@@ -207,6 +227,7 @@ function App() {
             </RequireStaff>
           }
         />
+
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Router>

@@ -4,6 +4,7 @@ import { Link, useLocation } from 'react-router-dom';
 
 const navItems = [
   { label: 'Floor Plan', path: '/staff/table-map' },
+  { label: 'Order List', path: '/staff/order-list' },
   { label: 'Active Orders', path: '/staff/active-orders' },
   { label: 'Kitchen Pulse', path: '/staff/kds' },
   { label: 'Billing', path: '/staff/billing' },
