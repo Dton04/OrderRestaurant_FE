@@ -1,22 +1,27 @@
 import React from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import {
-  LayoutDashboard,
-  Users,
-  LogOut,
-  UtensilsCrossed,
   BarChart3,
+  Gift,
+  LayoutDashboard,
+  LogOut,
   Settings,
+  Users,
+  UtensilsCrossed,
 } from 'lucide-react';
 
 const AdminSidebar: React.FC = () => {
   const navigate = useNavigate();
   const userRaw = localStorage.getItem('user');
   let user: { full_name?: string; role?: string } | null = null;
+
   if (userRaw) {
     try {
       const parsed: unknown = JSON.parse(userRaw);
-      user = parsed && typeof parsed === 'object' ? (parsed as { full_name?: string; role?: string }) : null;
+      user =
+        parsed && typeof parsed === 'object'
+          ? (parsed as { full_name?: string; role?: string })
+          : null;
     } catch {
       user = null;
     }
@@ -28,6 +33,7 @@ const AdminSidebar: React.FC = () => {
     { icon: Users, label: 'Quản lý bàn', path: '/admin/tables'},
     { icon: UtensilsCrossed, label: 'Thực đơn', path: '/admin/menu' },
     { icon: UtensilsCrossed, label: 'Danh mục', path: '/admin/categories' },
+    { icon: Gift, label: 'Loyalty', path: '/admin/loyalty' },
     { icon: BarChart3, label: 'Báo cáo', path: '/admin/reports' },
     { icon: Settings, label: 'Cài đặt', path: '/admin/settings' },
   ];
@@ -40,10 +46,10 @@ const AdminSidebar: React.FC = () => {
   };
 
   return (
-    <aside className="w-60 bg-white h-screen border-r border-gray-100 flex flex-col fixed left-0 top-0 z-20">
+    <aside className="fixed left-0 top-0 z-20 flex h-screen w-60 flex-col border-r border-gray-100 bg-white">
       <div className="p-5">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 bg-[#ef5b1b] rounded-xl flex items-center justify-center text-white font-extrabold text-xs">
+          <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#ef5b1b] text-xs font-extrabold text-white">
             OR
           </div>
           <div className="leading-tight">
@@ -53,16 +59,16 @@ const AdminSidebar: React.FC = () => {
         </div>
       </div>
 
-      <nav className="flex-1 px-3 mt-2">
+      <nav className="mt-2 flex-1 px-3">
         <div className="space-y-0.5">
           {navItems.map((item) => (
             <NavLink
               key={item.path}
               to={item.path}
               className={({ isActive }) =>
-                `flex items-center gap-2.5 px-3 py-2.5 rounded-xl transition-all text-sm ${
+                `flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm transition-all ${
                   isActive
-                    ? 'bg-orange-50 text-[#ef5b1b] font-bold'
+                    ? 'bg-orange-50 font-bold text-[#ef5b1b]'
                     : 'text-gray-500 hover:bg-gray-50'
                 }`
               }
@@ -74,22 +80,22 @@ const AdminSidebar: React.FC = () => {
         </div>
       </nav>
 
-      <div className="p-3 border-t border-gray-100">
-        <div className="flex items-center gap-3 rounded-2xl bg-gray-50 border border-gray-100 p-3">
-          <div className="w-10 h-10 rounded-2xl bg-orange-100 text-[#ef5b1b] flex items-center justify-center font-extrabold">
+      <div className="border-t border-gray-100 p-3">
+        <div className="flex items-center gap-3 rounded-2xl border border-gray-100 bg-gray-50 p-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-orange-100 font-extrabold text-[#ef5b1b]">
             {(user?.full_name || 'A').slice(0, 1).toUpperCase()}
           </div>
           <div className="min-w-0 flex-1">
-            <div className="text-sm font-extrabold text-gray-900 truncate">
+            <div className="truncate text-sm font-extrabold text-gray-900">
               {user?.full_name || 'Admin User'}
             </div>
-            <div className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">
+            <div className="text-[10px] font-bold uppercase tracking-wider text-gray-400">
               {user?.role || 'ADMIN'}
             </div>
           </div>
           <button
             onClick={handleLogout}
-            className="p-2 rounded-xl hover:bg-white transition-colors text-gray-500"
+            className="rounded-xl p-2 text-gray-500 transition-colors hover:bg-white"
             aria-label="Logout"
           >
             <LogOut size={18} />
