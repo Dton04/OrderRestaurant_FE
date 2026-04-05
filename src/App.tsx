@@ -23,6 +23,7 @@ import ProfilePage from './pages/ProfilePage';
 import ChefLayout from './components/Chef/Layout';
 import ChefDashboardPage from './pages/Chef/DashboardPage';
 import ChefHistoryPage from './pages/Chef/HistoryPage';
+import PreparationNotesPage from './pages/Chef/PreparationNotesPage';
 
 function RequireAuth({ children }: { children: React.ReactNode }) {
   const location = useLocation();
@@ -182,6 +183,7 @@ function App() {
           <Route index element={<Navigate to="dashboard" replace />} />
           <Route path="dashboard" element={<ChefDashboardPage />} />
           <Route path="history" element={<ChefHistoryPage />} />
+          <Route path="preparation" element={<PreparationNotesPage />} />
           <Route path="settings" element={<ProfilePage />} />
         </Route>
 
