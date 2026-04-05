@@ -39,4 +39,6 @@ export interface Order {
   notes?: string | null;
   voucher_id?: bigint | number | string | null;
   order_items?: OrderItem[];
+  created_at?: string;
+  updated_at?: string;
 }

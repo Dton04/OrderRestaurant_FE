@@ -12,7 +12,7 @@ const LoginPage: React.FC = () => {
   const [rememberMe, setRememberMe] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  
+
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -32,9 +32,17 @@ const LoginPage: React.FC = () => {
       }
     }
     if (token) {
-      if (role.toLowerCase() === 'admin') {
+      const r = role.toLowerCase();
+      if (r === 'admin') {
         navigate('/admin', { replace: true });
-      } else {
+      }
+      else if (r === 'staff') {
+        navigate('/staff/table-map', { replace: true });
+      }
+      else if (r === 'chef') { // THÊM ĐOẠN NÀY
+        navigate('/chef/dashboard', { replace: true });
+      }
+      else {
         navigate('/', { replace: true });
       }
     }
@@ -44,14 +52,17 @@ const LoginPage: React.FC = () => {
     e.preventDefault();
     setLoading(true);
     setError('');
-    
+
     try {
       const response = await authApi.login({ email, password });
       console.log('Login success:', response);
       localStorage.setItem('token', response.access_token);
       localStorage.setItem('refresh_token', response.refresh_token);
-      localStorage.setItem('user', JSON.stringify(response.user));
-      const role = String(response.user?.role || '');
+      const normalizedRole = String(response.user?.role || '').toLowerCase();
+      const userToStore =
+        normalizedRole === 'chef' ? { ...response.user, role_id: 4 } : response.user;
+      localStorage.setItem('user', JSON.stringify(userToStore));
+      const role = String(userToStore?.role || '');
       if (role.toLowerCase() === 'admin') {
         const state = location.state as { from?: { pathname?: string } } | null;
         const redirectTo = state?.from?.pathname?.startsWith('/admin')
@@ -60,6 +71,10 @@ const LoginPage: React.FC = () => {
         navigate(redirectTo || '/admin', { replace: true });
       } else if (role.toLowerCase() === 'staff') {
         navigate('/staff/table-map', { replace: true });
+      }
+      else if (role.toLowerCase() === 'chef') {
+        console.log("Đang chuyển hướng tới trang Đầu bếp...");
+        navigate('/chef/dashboard', { replace: true });
       } else {
         const state = location.state as { from?: { pathname?: string } } | null;
         const redirectTo = state?.from?.pathname?.startsWith('/admin') ? '/' : state?.from?.pathname || '/';
@@ -87,8 +102,8 @@ const LoginPage: React.FC = () => {
   };
 
   return (
-    <AuthLayout 
-      title="Chào mừng trở lại" 
+    <AuthLayout
+      title="Chào mừng trở lại"
       subtitle="Đăng nhập để quản lý nhà hàng của bạn ngay hôm nay"
     >
       <div className="w-full max-w-sm mx-auto">

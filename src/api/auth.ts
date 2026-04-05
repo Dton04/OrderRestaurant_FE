@@ -23,6 +23,7 @@ type RefreshResponse = {
     id: string;
     full_name: string;
     role: string;
+    role_id?: number;
     email?: string;
     phone?: string;
   };
@@ -50,7 +51,12 @@ async function refreshAccessToken(): Promise<string> {
 
   localStorage.setItem('token', response.data.access_token);
   localStorage.setItem('refresh_token', response.data.refresh_token);
-  localStorage.setItem('user', JSON.stringify(response.data.user));
+  const normalizedRole = String(response.data.user?.role || '').toLowerCase();
+  const userToStore =
+    normalizedRole === 'chef' && !response.data.user.role_id
+      ? { ...response.data.user, role_id: 4 }
+      : response.data.user;
+  localStorage.setItem('user', JSON.stringify(userToStore));
 
   return response.data.access_token;
 }

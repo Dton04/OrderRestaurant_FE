@@ -18,7 +18,8 @@ const TableManagementPage: React.FC = () => {
     try {
       setLoading(true);
       const data = await tableApi.findAll();
-      setTables(data);
+      const activeTables = data.filter((table) => !table.deleted_at);
+      setTables(activeTables);
       setError(null);
     } catch (err) {
       console.error('Failed to fetch tables:', err);
@@ -42,11 +43,22 @@ const TableManagementPage: React.FC = () => {
     setIsModalOpen(true);
   };
 
-  const handleDeleteTable = async (id: number) => {
+  const handleDeleteTable = async (id: number | string) => {
     if (!window.confirm('Bạn có chắc chắn muốn xóa bàn này không?')) return;
+
+    const tableId = Number(id);
+    if (Number.isNaN(tableId)) {
+      console.warn('Table id is invalid for delete:', id);
+      alert('ID bàn không hợp lệ. Vui lòng làm mới trình duyệt và thử lại.');
+      return;
+    }
+
+    console.debug('Deleting table id:', tableId);
+
     try {
-      await tableApi.remove(id);
-      fetchTables(); // Refresh list
+      await tableApi.remove(tableId);
+      console.debug('Delete successful for table id:', tableId);
+      await fetchTables(); // Refresh list
     } catch (err) {
       console.error('Failed to delete table:', err);
       alert('Không thể xóa bàn. Vui lòng thử lại.');
