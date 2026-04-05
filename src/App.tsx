@@ -1,3 +1,27 @@
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Navigate,
+  useLocation,
+} from 'react-router-dom';
+import LoginPage from './pages/LoginPage';
+import RegisterPage from './pages/RegisterPage';
+import HomePage from './pages/HomePage';
+import AdminLayout from './components/Admin/Layout';
+import AdminUsersPage from './pages/AdminUsersPage';
+import DashboardPage from './pages/Admin/DashboardPage';
+import MenuManagementPage from './pages/Admin/MenuManagementPage';
+import CategoryManagementPage from './pages/Admin/CategoryManagementPage';
+import TableManagementPage from './pages/Admin/TableManagementPage';
+import TableMapPage from './pages/Staff/TableMapPage';
+import ActiveOrdersPage from './pages/Staff/ActiveOrdersPage';
+import BillingPage from './pages/Staff/BillingPage';
+import ProfilePage from './pages/ProfilePage';
+import ChefLayout from './components/Chef/Layout';
+import ChefDashboardPage from './pages/Chef/DashboardPage';
+import ChefHistoryPage from './pages/Chef/HistoryPage';
+
 function RequireStaff({ children }: { children: React.ReactNode }) {
   const location = useLocation();
   const token = localStorage.getItem('token');
@@ -127,6 +151,34 @@ function RequireAdmin({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+function RequireChef({ children }: { children: React.ReactNode }) {
+  const location = useLocation();
+  const token = localStorage.getItem('token');
+  const userRaw = localStorage.getItem('user');
+  let role = '';
+  if (userRaw) {
+    try {
+      const parsed: unknown = JSON.parse(userRaw);
+      role =
+        parsed && typeof parsed === 'object' && 'role' in parsed
+          ? String((parsed as Record<string, unknown>).role || '')
+          : '';
+    } catch {
+      role = '';
+    }
+  }
+
+  if (!token) {
+    return <Navigate to="/login" replace state={{ from: location }} />;
+  }
+
+  if (role.toLowerCase() !== 'chef') {
+    return <Navigate to="/" replace />;
+  }
+
+  return <>{children}</>;
+}
+
 function App() {
   return (
     <Router>
@@ -157,7 +209,20 @@ function App() {
           <Route path="tables" element={<TableManagementPage />} />
           <Route path="loyalty" element={<LoyaltyManagementPage />} />
           <Route path="reports" element={<DashboardPage />} />
-          <Route path="settings" element={<DashboardPage />} />
+          <Route path="settings" element={<ProfilePage />} />
+        </Route>
+        <Route
+          path="/chef"
+          element={
+            <RequireChef>
+              <ChefLayout />
+            </RequireChef>
+          }
+        >
+          <Route index element={<Navigate to="dashboard" replace />} />
+          <Route path="dashboard" element={<ChefDashboardPage />} />
+          <Route path="history" element={<ChefHistoryPage />} />
+          <Route path="settings" element={<ProfilePage />} />
         </Route>
         <Route
           path="/staff/table-map"
@@ -183,21 +248,14 @@ function App() {
             </RequireStaff>
           }
         />
-
-        {/* Chef Routes */}
         <Route
-          path="/chef"
+          path="/staff/settings"
           element={
-            <RequireChef>
-              <ChefLayout />
-            </RequireChef>
+            <RequireStaff>
+              <ProfilePage />
+            </RequireStaff>
           }
-        >
-          <Route index element={<Navigate to="dashboard" replace />} />
-          <Route path="dashboard" element={<ChefDashboardPage />} />
-          <Route path="history" element={<ChefHistoryPage />} />
-        </Route>
-
+        />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Router>

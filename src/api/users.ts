@@ -36,4 +36,18 @@ export const usersApi = {
       },
     );
   },
+
+  getProfile: async (): Promise<User> => {
+    const response = await api.get<User>('/auth/me', {
+      headers: getAuthorizationHeader(),
+    });
+    return response.data;
+  },
+
+  updateProfile: async (data: Partial<User>): Promise<User> => {
+    const response = await api.put<User>('/users/profile', data, {
+      headers: getAuthorizationHeader(),
+    });
+    return response.data;
+  },
 };
