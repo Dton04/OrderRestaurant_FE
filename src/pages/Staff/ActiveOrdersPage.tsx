@@ -15,6 +15,7 @@ import StaffTopBar from '../../components/staff/StaffTopBar';
 import { dishApi } from '../../api/dish';
 import { categoryApi } from '../../api/category';
 import orderApi from '../../api/order';
+import { upsertLocalStaffOrder } from '../../utils/staffOrderStore';
 import type { Dish } from '../../types/dish';
 import type { Category } from '../../types/category';
 import type { BillingDraft, BillingDraftItem } from '../../types/billing';
@@ -233,6 +234,16 @@ const ActiveOrdersPage: React.FC = () => {
         vat,
       } satisfies BillingDraft),
     );
+    upsertLocalStaffOrder({
+      id: order.id,
+      staff_id: order.staff_id ?? user?.id ?? null,
+      table_id: order.table_id ?? null,
+      total_amount: createdSubtotal || subtotal,
+      final_amount: createdFinalAmount || total,
+      status: String(order.status || 'PENDING'),
+      created_at: order.created_at ?? new Date().toISOString(),
+      updated_at: order.updated_at ?? new Date().toISOString(),
+    });
 
     return createdOrderId;
   };
@@ -263,9 +274,18 @@ const ActiveOrdersPage: React.FC = () => {
         return;
       }
 
-      await orderApi.update(currentOrderId, { status: 'IN_PROGRESS' });
+      await orderApi.update(currentOrderId, { status: 'PROCESSING' });
+      upsertLocalStaffOrder({
+        id: currentOrderId,
+        staff_id: parseStoredUser()?.id ?? null,
+        table_id: null,
+        total_amount: subtotal,
+        final_amount: total,
+        status: 'PROCESSING',
+        updated_at: new Date().toISOString(),
+      });
       setFeedbackType('success');
-      setFeedback(`Đã gửi bếp thành công cho đơn ${draftOrderCode}.`);
+      setFeedback(`Đã gửi bếp thành công. Đơn ${draftOrderCode} đang ở trạng thái PROCESSING.`);
     } catch (err) {
       console.error('Failed to send order to kitchen:', err);
       setFeedbackType('error');

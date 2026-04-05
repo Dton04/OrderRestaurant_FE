@@ -18,6 +18,7 @@ import StaffSidebarNew from '../../components/staff/StaffSidebarNew';
 import StaffTopBar from '../../components/staff/StaffTopBar';
 import paymentApi from '../../api/payment';
 import orderApi from '../../api/order';
+import { upsertLocalStaffOrder } from '../../utils/staffOrderStore';
 import type { BillingDraft } from '../../types/billing';
 import type { PaymentMethod, PaymentStatus, Payment } from '../../types/payment';
 
@@ -323,8 +324,17 @@ const BillingPage: React.FC = () => {
 
       if (!isMomo) {
         await orderApi.update(draft.orderId, {
-          status: 'PAID',
+          status: 'COMPLETED',
           final_amount: draft.finalAmount,
+        });
+        upsertLocalStaffOrder({
+          id: draft.orderId,
+          staff_id: getStoredUser()?.id ?? null,
+          table_id: null,
+          total_amount: draft.totalAmount,
+          final_amount: draft.finalAmount,
+          status: 'COMPLETED',
+          updated_at: new Date().toISOString(),
         });
       }
 
@@ -333,7 +343,7 @@ const BillingPage: React.FC = () => {
       setFeedback(
         isMomo
           ? `Đã tạo payment MOMO ở trạng thái PENDING. Payment ID: ${String(payment.id)}. Cần endpoint init/callback từ backend để hoàn tất giao dịch.`
-          : `Thanh toán thành công. Payment ID: ${String(payment.id)}. Order đã được cập nhật sang trạng thái PAID.`,
+          : `Thanh toán thành công. Payment ID: ${String(payment.id)}. Order đã được cập nhật sang trạng thái COMPLETED.`,
       );
       await loadRevenueStats();
     } catch (error) {

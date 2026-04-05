@@ -44,6 +44,7 @@ import TableManagementPage from './pages/Admin/TableManagementPage';
 import TableMapPage from './pages/Staff/TableMapPage';
 import ActiveOrdersPage from './pages/Staff/ActiveOrdersPage';
 import BillingPage from './pages/Staff/BillingPage';
+import OrderListPage from './pages/Staff/OrderListPage';
 
 function RequireAuth({ children }: { children: React.ReactNode }) {
   const location = useLocation();
@@ -128,6 +129,14 @@ function App() {
           element={
             <RequireStaff>
               <ActiveOrdersPage />
+            </RequireStaff>
+          }
+        />
+        <Route
+          path="/staff/order-list"
+          element={
+            <RequireStaff>
+              <OrderListPage />
             </RequireStaff>
           }
         />

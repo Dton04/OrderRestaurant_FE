@@ -1,3 +1,10 @@
+export type OrderStatus =
+  | 'PENDING'
+  | 'PROCESSING'
+  | 'READY'
+  | 'COMPLETED'
+  | 'CANCELLED';
+
 export interface CreateOrderItemDto {
   dish_id: bigint | number | string;
   quantity: number;
@@ -11,7 +18,7 @@ export interface CreateOrderDto {
   total_amount: number;
   discount_amount?: number;
   final_amount: number;
-  status: string;
+  status: OrderStatus | string;
   items: CreateOrderItemDto[];
 }
 
@@ -23,7 +30,7 @@ export interface OrderItem {
   dish_id: bigint | number | string;
   quantity: number;
   price_at_order: number | string;
-  status: string;
+  status: OrderStatus | string;
   notes?: string | null;
 }
 
@@ -35,8 +42,10 @@ export interface Order {
   total_amount: number | string;
   discount_amount?: number | string | null;
   final_amount: number | string;
-  status: string;
+  status: OrderStatus | string;
   notes?: string | null;
   voucher_id?: bigint | number | string | null;
+  created_at?: string;
+  updated_at?: string;
   order_items?: OrderItem[];
 }
