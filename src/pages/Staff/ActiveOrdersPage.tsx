@@ -9,7 +9,7 @@ import {
   Loader2,
   Image as ImageIcon,
 } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import StaffSidebarNew from '../../components/staff/StaffSidebarNew';
 import StaffTopBar from '../../components/staff/StaffTopBar';
 import { dishApi } from '../../api/dish';
@@ -31,6 +31,15 @@ const categoryTabLabels = ['Khai vị', 'Món chính', 'Đồ uống'] as const;
 const orderAccentPalette = ['#ac3509', '#006972', '#ff7043'];
 const BILLING_DRAFT_KEY = 'staff.billingDraft';
 const ORDER_ID_STORAGE_KEY = 'staff.currentOrderId';
+const ACTIVE_ORDER_TABLE_KEY = 'staff.activeOrderTable';
+
+type SelectedTableInfo = {
+  id?: string | number;
+  table_number?: string;
+  guests?: number;
+  capacity?: number;
+  status?: string;
+};
 
 const currency = (value: number) =>
   `${new Intl.NumberFormat('vi-VN').format(value)}đ`;
@@ -67,6 +76,7 @@ const toNumber = (value: number | string | null | undefined) => {
 };
 
 const ActiveOrdersPage: React.FC = () => {
+  const location = useLocation();
   const navigate = useNavigate();
   const [categories, setCategories] = useState<Category[]>([]);
   const [dishes, setDishes] = useState<Dish[]>([]);
@@ -82,6 +92,30 @@ const ActiveOrdersPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<string | null>(null);
   const [feedbackType, setFeedbackType] = useState<'success' | 'error' | null>(null);
+  const [selectedTable, setSelectedTable] = useState<SelectedTableInfo | null>(null);
+
+  useEffect(() => {
+    const fromState = (location.state as { selectedTable?: SelectedTableInfo } | null)
+      ?.selectedTable;
+
+    if (fromState) {
+      setSelectedTable(fromState);
+      localStorage.setItem(ACTIVE_ORDER_TABLE_KEY, JSON.stringify(fromState));
+      return;
+    }
+
+    const stored = localStorage.getItem(ACTIVE_ORDER_TABLE_KEY);
+    if (!stored) {
+      return;
+    }
+
+    try {
+      const parsed = JSON.parse(stored) as SelectedTableInfo;
+      setSelectedTable(parsed);
+    } catch {
+      setSelectedTable(null);
+    }
+  }, [location.state]);
 
   useEffect(() => {
     const fetchMenu = async () => {
@@ -203,6 +237,7 @@ const ActiveOrdersPage: React.FC = () => {
     const user = parseStoredUser();
     const payload: CreateOrderDto = {
       staff_id: user?.id,
+      table_id: selectedTable?.id,
       total_amount: subtotal,
       discount_amount: discountAmount,
       final_amount: total,
@@ -311,6 +346,11 @@ const ActiveOrdersPage: React.FC = () => {
                   Tiếp nhận đơn hàng
                 </h1>
                 <div className="mt-2 flex flex-wrap items-center gap-3">
+                  {selectedTable ? (
+                    <span className="rounded-full bg-[#ac3509]/10 px-3 py-1 text-xs font-bold text-[#ac3509]">
+                      Ban {selectedTable.table_number || selectedTable.id}
+                    </span>
+                  ) : null}
                   <span className="rounded-full bg-[#00acbb]/10 px-3 py-1 text-xs font-bold text-[#006972]">
                     Đơn mới
                   </span>
@@ -320,7 +360,7 @@ const ActiveOrdersPage: React.FC = () => {
                 </div>
               </div>
               <div className="flex w-full rounded-xl bg-[#e7e8e9] p-1 xl:w-auto">
-                {categories.slice(0, 3).map((category, index) => {
+                {categories.map((category, index) => {
                   const active = category.id === activeCategoryId;
 
                   return (
@@ -333,7 +373,7 @@ const ActiveOrdersPage: React.FC = () => {
                           : 'text-[#59413a] hover:text-[#191c1d]'
                       }`}
                     >
-                      {categoryTabLabels[index] || category.name}
+                      {categoryTabLabels[index] ?? category.name}
                     </button>
                   );
                 })}
@@ -539,3 +579,5 @@ const ActiveOrdersPage: React.FC = () => {
 };
 
 export default ActiveOrdersPage;
+
+
