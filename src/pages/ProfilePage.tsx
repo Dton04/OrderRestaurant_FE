@@ -32,8 +32,8 @@ const ProfilePage: React.FC = () => {
           full_name: profile.full_name || '',
           email: profile.email || '',
           phone: profile.phone || '',
-          address: profile.address || '',
-          timezone: profile.timezone || '(GMT+07:00) Bangkok, Hanoi, Jakarta',
+          address: '',
+          timezone: '(GMT+07:00) Bangkok, Hanoi, Jakarta',
         });
       } catch (err) {
         console.error('Failed to fetch profile:', err);
@@ -52,12 +52,9 @@ const ProfilePage: React.FC = () => {
   const handleSave = async () => {
     setSaving(true);
     try {
-      // Chỉ gửi những trường mà Backend DTO hỗ trợ
       const updateData = {
         full_name: formData.full_name,
         phone: formData.phone,
-        address: formData.address,
-        timezone: formData.timezone
       };
       
       await usersApi.updateProfile(updateData);
