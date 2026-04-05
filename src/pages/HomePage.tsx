@@ -1,10 +1,12 @@
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
+  ArrowRight,
   BarChart3,
+  Check,
   ClipboardList,
   LogOut,
-  ShieldCheck,
+  Menu,
   Table2,
   Utensils,
 } from 'lucide-react';
@@ -30,23 +32,27 @@ function safeParseUser(value: string | null): StoredUser | null {
 
 const FEATURES = [
   {
-    title: 'Digital Menu',
-    description: 'Cập nhật thực đơn nhanh, phân loại rõ ràng, hiển thị đẹp trên mọi thiết bị.',
+    title: 'Menu số hiện đại',
+    description:
+      'Cập nhật thực đơn nhanh, phân loại rõ ràng, hiển thị đẹp trên mọi thiết bị.',
     icon: Utensils,
   },
   {
-    title: 'KDS System',
-    description: 'Đồng bộ đơn hàng sang bếp theo thời gian thực, giảm sai sót, tăng tốc độ phục vụ.',
+    title: 'KDS theo thời gian thực',
+    description:
+      'Đồng bộ đơn hàng sang bếp theo thời gian thực, giảm sai sót, tăng tốc độ phục vụ.',
     icon: ClipboardList,
   },
   {
-    title: 'Table Management',
-    description: 'Quản lý sơ đồ bàn trực quan: trống, có khách, đặt trước, chờ dọn dẹp.',
+    title: 'Sơ đồ bàn trực quan',
+    description:
+      'Quản lý sơ đồ bàn: trống, có khách, đặt trước, chờ dọn dẹp hiển thị rõ bằng màu sắc.',
     icon: Table2,
   },
   {
-    title: 'Real-time Analytics',
-    description: 'Theo dõi doanh thu, top món bán chạy, hiệu suất ca làm và xu hướng theo thời gian.',
+    title: 'Báo cáo thông minh',
+    description:
+      'Theo dõi doanh thu, top món bán chạy, hiệu suất ca làm và xu hướng theo thời gian.',
     icon: BarChart3,
   },
 ] as const;
@@ -75,6 +81,8 @@ const TESTIMONIALS = [
 const HomePage: React.FC = () => {
   const navigate = useNavigate();
   const user = safeParseUser(localStorage.getItem('user'));
+  const token = localStorage.getItem('token');
+  const isAuthed = Boolean(token);
 
   const handleLogout = () => {
     localStorage.removeItem('token');
@@ -85,214 +93,261 @@ const HomePage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-white">
-      <header className="sticky top-0 z-20 bg-white/90 backdrop-blur border-b border-gray-100">
-        <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-9 h-9 rounded-xl bg-[#ef5b1b] text-white flex items-center justify-center font-bold">
-              OR
-            </div>
-            <div className="font-extrabold text-gray-900">OrderRestaurant</div>
-          </div>
-
-          <nav className="hidden md:flex items-center gap-6 text-sm font-semibold text-gray-700">
-            <a href="#features" className="hover:text-[#ef5b1b] transition-colors">
-              Hệ thống bếp
-            </a>
-            <a href="/admin/tables" className="hover:text-[#ef5b1b] transition-colors">
-              Quản lý bàn
-            </a>
-            <a href="#reviews" className="hover:text-[#ef5b1b] transition-colors">
-              Menu số
-            </a>
-          </nav>
-
-          <div className="flex items-center gap-3">
-            <div className="hidden sm:block text-right">
-              <div className="text-xs text-gray-500">Xin chào</div>
-              <div className="text-sm font-bold text-gray-900">
-                {user?.full_name || 'Người dùng'}
+      <header className="sticky top-0 z-20 border-b border-gray-100 bg-white/90 backdrop-blur">
+        <div className="mx-auto max-w-6xl px-4">
+          <div className="flex h-16 items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#ef5b1b] text-sm font-extrabold text-white">
+                OR
               </div>
+              <div className="font-extrabold text-gray-900">OrderRestaurant</div>
             </div>
-            <button
-              onClick={handleLogout}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#ef5b1b] hover:bg-[#d44d15] text-white font-bold shadow-sm transition-colors"
-            >
-              <LogOut size={18} />
-              Logout
-            </button>
+
+            <nav className="hidden items-center gap-7 text-sm font-semibold text-gray-700 md:flex">
+              <a href="#features" className="transition-colors hover:text-[#ef5b1b]">
+                Tính năng
+              </a>
+              <a href="#pricing" className="transition-colors hover:text-[#ef5b1b]">
+                Giá
+              </a>
+              <a href="#about" className="transition-colors hover:text-[#ef5b1b]">
+                Giới thiệu
+              </a>
+              <a href="#contact" className="transition-colors hover:text-[#ef5b1b]">
+                Thông tin
+              </a>
+            </nav>
+
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-gray-200 bg-white text-gray-700 transition-colors hover:bg-gray-50 md:hidden"
+              >
+                <Menu size={18} />
+              </button>
+
+              {isAuthed ? (
+                <>
+                  <div className="hidden text-right sm:block">
+                    <div className="text-xs text-gray-500">Xin chào</div>
+                    <div className="text-sm font-extrabold text-gray-900">
+                      {user?.full_name || 'Người dùng'}
+                    </div>
+                  </div>
+                  <button
+                    onClick={handleLogout}
+                    className="inline-flex items-center gap-2 rounded-xl bg-[#ef5b1b] px-4 py-2 font-extrabold text-white shadow-sm transition-colors hover:bg-[#d44d15]"
+                  >
+                    <LogOut size={18} />
+                    Logout
+                  </button>
+                </>
+              ) : (
+                <Link
+                  to="/login"
+                  className="inline-flex items-center gap-2 rounded-xl bg-[#ef5b1b] px-4 py-2 font-extrabold text-white shadow-sm transition-colors hover:bg-[#d44d15]"
+                >
+                  Đăng nhập
+                  <ArrowRight size={18} />
+                </Link>
+              )}
+            </div>
           </div>
         </div>
       </header>
 
-      <main>
-        <section className="bg-[#fff7f4]">
-          <div className="max-w-6xl mx-auto px-4 pt-10 pb-14">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 items-center">
+      <main className="bg-white">
+        <section className="relative overflow-hidden bg-gradient-to-b from-[#fff3ed] to-white">
+          <div className="mx-auto max-w-6xl px-4 pb-14 pt-12">
+            <div className="grid grid-cols-1 items-center gap-10 lg:grid-cols-2">
               <div>
-                <div className="text-xs font-extrabold text-[#ef5b1b] tracking-widest">
-                  BY RESTOHUB
+                <div className="text-[11px] font-extrabold uppercase tracking-[0.24em] text-[#ef5b1b]">
+                  Orderrestaurant
                 </div>
-                <h1 className="mt-4 text-4xl md:text-5xl font-extrabold leading-tight text-gray-900">
-                  Nâng tầm <span className="text-[#ef5b1b]">nghệ thuật</span>
+                <h1 className="mt-4 text-4xl font-extrabold leading-tight text-gray-900 md:text-5xl">
+                  Kiến tạo nghệ
                   <br />
-                  ẩm thực số
+                  thuật ẩm thực số
                 </h1>
-                <p className="mt-4 text-gray-600 leading-relaxed max-w-xl">
-                  Tối ưu hóa quy trình vận hành nhà hàng từ order, bếp, bàn đến thanh toán.
-                  Theo dõi thời gian thực và ra quyết định dựa trên dữ liệu.
+                <p className="mt-4 max-w-xl text-sm leading-relaxed text-gray-600 md:text-base">
+                  Vận hành nhà hàng trơn tru từ tiếp nhận đơn, gửi bếp, quản lý bàn đến thanh
+                  toán. Theo dõi theo thời gian thực và ra quyết định dựa trên dữ liệu.
                 </p>
 
-                <div className="mt-6 flex flex-col sm:flex-row gap-3">
-                  <button className="px-5 py-3 rounded-xl bg-gray-900 text-white font-bold hover:bg-black transition-colors">
-                    Bắt đầu ngay
-                  </button>
-                  <Link
-                    to="/login"
-                    className="px-5 py-3 rounded-xl bg-white border border-gray-200 text-gray-900 font-bold hover:bg-gray-50 transition-colors text-center"
+                <div className="mt-7 flex flex-col gap-3 sm:flex-row">
+                  <button
+                    type="button"
+                    onClick={() => navigate(isAuthed ? '/staff/active-orders' : '/login')}
+                    className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#ef5b1b] px-6 py-3 text-sm font-extrabold text-white shadow-md shadow-orange-200 transition-colors hover:bg-[#d44d15]"
                   >
-                    Đăng nhập
-                  </Link>
+                    Khám phá ngay
+                    <ArrowRight size={18} />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => navigate('/admin/menu')}
+                    className="inline-flex items-center justify-center rounded-xl border border-gray-200 bg-white px-6 py-3 text-sm font-extrabold text-gray-900 transition-colors hover:bg-gray-50"
+                  >
+                    Dùng thử miễn phí
+                  </button>
                 </div>
               </div>
 
               <div className="relative">
-                <div className="absolute -top-5 -left-5 w-28 h-28 rounded-3xl bg-orange-100 blur-xl" />
-                <div className="relative rounded-3xl overflow-hidden bg-white shadow-xl border border-gray-100">
+                <div className="absolute -left-10 -top-12 h-48 w-48 rounded-full bg-orange-100 blur-2xl" />
+                <div className="relative overflow-hidden rounded-3xl border border-gray-100 bg-white shadow-xl">
                   <img
                     src={heroImage}
                     alt="Restaurant"
-                    className="w-full h-[320px] md:h-[420px] object-cover"
+                    className="h-[320px] w-full object-cover md:h-[380px]"
                     loading="eager"
                   />
+                  <div className="absolute bottom-5 left-5 right-5 rounded-2xl bg-white/90 p-4 backdrop-blur">
+                    <div className="text-xs font-extrabold text-gray-900">
+                      Nhà hàng hoạt động ổn định
+                    </div>
+                    <div className="mt-2 space-y-2 text-xs text-gray-600">
+                      <div className="flex items-center gap-2">
+                        <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-orange-50 text-[#ef5b1b]">
+                          <Check size={14} />
+                        </span>
+                        Đồng bộ bếp theo thời gian thực
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-orange-50 text-[#ef5b1b]">
+                          <Check size={14} />
+                        </span>
+                        Quản lý bàn trực quan
+                      </div>
+                    </div>
+                  </div>
                 </div>
 
-                <div className="absolute -left-4 -bottom-6 bg-white rounded-2xl shadow-lg border border-gray-100 px-4 py-3 flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-orange-50 text-[#ef5b1b] flex items-center justify-center font-extrabold">
-                    +
-                  </div>
-                  <div>
-                    <div className="text-xs text-gray-500">Tăng hiệu suất</div>
-                    <div className="text-sm font-extrabold text-gray-900">+35.8%</div>
-                  </div>
-                </div>
+              
               </div>
             </div>
           </div>
         </section>
 
         <section id="features" className="py-14">
-          <div className="max-w-6xl mx-auto px-4">
-            <div className="text-center max-w-2xl mx-auto">
-              <div className="text-sm font-extrabold text-gray-900">Giải pháp quản trị toàn diện</div>
-              <p className="mt-2 text-gray-600">
-                Mọi thứ bạn cần để vận hành nhà hàng hiệu quả: menu, bếp, bàn, đơn hàng và báo cáo.
-              </p>
+          <div className="mx-auto max-w-6xl px-4">
+            <div className="grid grid-cols-1 gap-10 lg:grid-cols-12 lg:items-end">
+              <div className="lg:col-span-5">
+                <div className="text-2xl font-extrabold text-gray-900">
+                  Tinh hoa công nghệ cho
+                  <br />
+                  mọi không gian ẩm thực
+                </div>
+                <p className="mt-3 text-sm leading-relaxed text-gray-600">
+                  Một bộ công cụ thống nhất cho nhân viên, bếp và quản lý. Tối ưu trải nghiệm cho
+                  khách ngay từ lần đầu.
+                </p>
+              </div>
+              <div className="hidden lg:col-span-7 lg:flex lg:justify-end">
+                <div className="h-[2px] w-10 rounded-full bg-[#ef5b1b]" />
+              </div>
             </div>
 
-            <div className="mt-10 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              {FEATURES.map((f) => (
-                <div
-                  key={f.title}
-                  className="rounded-2xl border border-gray-200 bg-white p-5 hover:shadow-sm transition-shadow"
-                >
-                  <div className="w-10 h-10 rounded-xl bg-orange-50 text-[#ef5b1b] flex items-center justify-center">
-                    <f.icon size={20} />
+            <div className="mt-10 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {FEATURES.slice(0, 3).map((f, idx) => {
+                const isHighlight = idx === 1;
+                return (
+                  <div
+                    key={f.title}
+                    className={`rounded-2xl border p-6 shadow-sm transition-all ${
+                      isHighlight
+                        ? 'border-[#ef5b1b]/20 bg-[#ef5b1b] text-white shadow-orange-200'
+                        : 'border-gray-200 bg-white hover:shadow-md'
+                    }`}
+                  >
+                    <div
+                      className={`flex h-11 w-11 items-center justify-center rounded-xl ${
+                        isHighlight ? 'bg-white/15' : 'bg-orange-50 text-[#ef5b1b]'
+                      }`}
+                    >
+                      <f.icon size={20} className={isHighlight ? 'text-white' : 'text-[#ef5b1b]'} />
+                    </div>
+                    <div className={`mt-4 text-base font-extrabold ${isHighlight ? 'text-white' : 'text-gray-900'}`}>
+                      {f.title}
+                    </div>
+                    <div className={`mt-2 text-sm leading-relaxed ${isHighlight ? 'text-white/85' : 'text-gray-600'}`}>
+                      {f.description}
+                    </div>
                   </div>
-                  <div className="mt-4 font-extrabold text-gray-900">{f.title}</div>
-                  <div className="mt-1 text-sm text-gray-600 leading-relaxed">{f.description}</div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         </section>
 
-        <section id="solutions" className="py-14 bg-gray-50">
-          <div className="max-w-6xl mx-auto px-4">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 items-center">
-              <div>
-                <div className="text-2xl font-extrabold text-gray-900">
-                  Vận hành mượt mà trên
-                  <br />
-                  mọi thiết bị
-                </div>
-                <p className="mt-3 text-gray-600 leading-relaxed">
-                  Giao diện trực quan, phù hợp cho nhân viên phục vụ, bếp và quản lý. Hạn chế sai sót,
-                  tăng tốc độ phục vụ, nâng trải nghiệm khách hàng.
-                </p>
-
-                <div className="mt-6 space-y-3">
-                  <div className="flex items-start gap-3 rounded-2xl border border-gray-200 bg-white p-4">
-                    <div className="w-10 h-10 rounded-xl bg-orange-50 text-[#ef5b1b] flex items-center justify-center">
-                      <ShieldCheck size={20} />
-                    </div>
-                    <div>
-                      <div className="font-extrabold text-gray-900">Quản lý vai trò</div>
-                      <div className="text-sm text-gray-600">
-                        Phân quyền rõ ràng: ADMIN, STAFF, CHEF, CUSTOMER theo nghiệp vụ.
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-3 rounded-2xl border border-gray-200 bg-white p-4">
-                    <div className="w-10 h-10 rounded-xl bg-orange-50 text-[#ef5b1b] flex items-center justify-center">
-                      <ClipboardList size={20} />
-                    </div>
-                    <div>
-                      <div className="font-extrabold text-gray-900">Theo dõi đơn realtime</div>
-                      <div className="text-sm text-gray-600">
-                        Trạng thái cập nhật tức thì từ order → bếp → phục vụ → hoàn thành.
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-3 rounded-2xl border border-gray-200 bg-white p-4">
-                    <div className="w-10 h-10 rounded-xl bg-orange-50 text-[#ef5b1b] flex items-center justify-center">
-                      <Table2 size={20} />
-                    </div>
-                    <div>
-                      <div className="font-extrabold text-gray-900">Sơ đồ bàn trực quan</div>
-                      <div className="text-sm text-gray-600">
-                        Trống, có khách, đặt trước, chờ dọn dẹp hiển thị rõ bằng màu sắc.
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
+        <section id="about" className="bg-white py-14">
+          <div className="mx-auto max-w-6xl px-4">
+            <div className="grid grid-cols-1 items-center gap-10 lg:grid-cols-2">
               <div className="relative">
-                <div className="relative rounded-3xl overflow-hidden bg-white shadow-xl border border-gray-100">
+                <div className="absolute -left-6 -top-6 h-24 w-24 rounded-3xl bg-orange-100 blur-xl" />
+                <div className="relative overflow-hidden rounded-3xl border border-gray-100 bg-white shadow-xl">
                   <img
                     src={heroImage}
-                    alt="Operations"
-                    className="w-full h-[340px] md:h-[460px] object-cover"
+                    alt="Kitchen"
+                    className="h-[340px] w-full object-cover md:h-[420px]"
                     loading="lazy"
                   />
                 </div>
               </div>
+
+              <div>
+                <div className="text-2xl font-extrabold text-gray-900">
+                  Một nền tảng.
+                  <br />
+                  Một nhịp bếp.
+                </div>
+                <p className="mt-3 text-sm leading-relaxed text-gray-600">
+                  Đồng bộ quy trình staff → bếp → bàn theo trạng thái rõ ràng. Ghi chú món, ưu tiên
+                  và thông tin bàn được hiển thị nhất quán để tránh sai sót khi đông khách.
+                </p>
+                <div className="mt-6 space-y-3">
+                  {[
+                    'Tự động đẩy món vào hàng đợi bếp',
+                    'Theo dõi tiến độ từng món theo trạng thái',
+                    'Tổng tiền & ghi chú hiển thị rõ ràng',
+                  ].map((text) => (
+                    <div key={text} className="flex items-start gap-3">
+                      <span className="mt-0.5 inline-flex h-6 w-6 items-center justify-center rounded-full bg-orange-50 text-[#ef5b1b]">
+                        <Check size={14} />
+                      </span>
+                      <div className="text-sm font-semibold text-gray-700">{text}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
           </div>
         </section>
 
-        <section id="reviews" className="py-14">
-          <div className="max-w-6xl mx-auto px-4">
-            <div className="text-center max-w-2xl mx-auto">
-              <div className="text-2xl font-extrabold text-gray-900">Khách hàng nói gì về chúng tôi?</div>
-              <p className="mt-2 text-gray-600">
-                Những phản hồi thực tế từ chủ nhà hàng, quản lý và đội bếp sau khi triển khai hệ thống.
-              </p>
+        <section id="reviews" className="bg-white py-14">
+          <div className="mx-auto max-w-6xl px-4">
+            <div className="text-center">
+              <div className="text-2xl font-extrabold text-gray-900">Câu chuyện từ khách hàng</div>
+              <div className="mt-2 text-sm text-gray-600">
+                Những phản hồi thực tế sau khi triển khai hệ thống.
+              </div>
             </div>
 
-            <div className="mt-10 grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="mt-10 grid grid-cols-1 gap-4 md:grid-cols-3">
               {TESTIMONIALS.map((t) => (
                 <div key={t.name} className="rounded-2xl border border-gray-200 bg-white p-6">
                   <div className="flex items-center gap-1 text-orange-500">
                     {Array.from({ length: t.stars }).map((_, idx) => (
-                      <span key={idx} className="text-sm">★</span>
+                      <span key={idx} className="text-sm">
+                        ★
+                      </span>
                     ))}
                   </div>
-                  <div className="mt-3 text-gray-700 leading-relaxed">{t.text}</div>
+                  <div className="mt-3 text-sm leading-relaxed text-gray-700">{t.text}</div>
                   <div className="mt-5 flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-gray-100" />
+                    <div className="h-10 w-10 rounded-full bg-gray-100" />
                     <div>
-                      <div className="font-extrabold text-gray-900">{t.name}</div>
+                      <div className="text-sm font-extrabold text-gray-900">{t.name}</div>
                       <div className="text-xs text-gray-500">{t.role}</div>
                     </div>
                   </div>
@@ -302,51 +357,51 @@ const HomePage: React.FC = () => {
           </div>
         </section>
 
-        <section className="py-14">
-          <div className="max-w-6xl mx-auto px-4">
-            <div className="rounded-3xl bg-gradient-to-br from-gray-950 to-gray-800 text-white p-8 md:p-12 overflow-hidden relative">
-              <div className="absolute inset-0 opacity-20 bg-[radial-gradient(circle_at_30%_20%,#ef5b1b,transparent_35%),radial-gradient(circle_at_80%_70%,#f97316,transparent_35%)]" />
-              <div className="relative grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+        <section id="pricing" className="bg-white py-14">
+          <div className="mx-auto max-w-6xl px-4">
+            <div className="rounded-3xl border border-gray-100 bg-gradient-to-br from-gray-950 to-gray-800 p-8 text-white md:p-12">
+              <div className="grid grid-cols-1 items-center gap-8 md:grid-cols-2">
                 <div>
-                  <div className="text-2xl md:text-3xl font-extrabold">
+                  <div className="text-2xl font-extrabold md:text-3xl">
                     Sẵn sàng chuyển đổi số
                     <br />
                     cho nhà hàng của bạn?
                   </div>
-                  <p className="mt-3 text-white/80 leading-relaxed">
-                    Bắt đầu với quy trình order chuẩn hóa và mở rộng dần: menu, bàn, bếp, thanh toán,
-                    loyalty và dashboard.
+                  <p className="mt-3 text-sm leading-relaxed text-white/80">
+                    Bắt đầu từ quy trình order, đồng bộ bếp và quản lý bàn. Mở rộng dần sang thanh
+                    toán, voucher, loyalty và dashboard.
                   </p>
-                  <div className="mt-6 flex flex-col sm:flex-row gap-3">
-                    <button className="px-5 py-3 rounded-xl bg-[#ef5b1b] hover:bg-[#d44d15] font-extrabold transition-colors">
+                  <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+                    <button
+                      type="button"
+                      onClick={() => navigate(isAuthed ? '/staff/table-map' : '/login')}
+                      className="rounded-xl bg-[#ef5b1b] px-5 py-3 text-sm font-extrabold transition-colors hover:bg-[#d44d15]"
+                    >
                       Bắt đầu ngay
                     </button>
-                    <button className="px-5 py-3 rounded-xl bg-white/10 hover:bg-white/15 border border-white/15 font-extrabold transition-colors">
+                    <button
+                      type="button"
+                      className="rounded-xl border border-white/15 bg-white/10 px-5 py-3 text-sm font-extrabold transition-colors hover:bg-white/15"
+                    >
                       Nhận tư vấn
                     </button>
                   </div>
                 </div>
-                <div className="hidden md:block">
-                  <div className="rounded-2xl border border-white/10 bg-white/5 p-6">
-                    <div className="text-sm font-bold text-white/80">Roadmap triển khai</div>
-                    <div className="mt-4 space-y-3 text-sm text-white/80">
-                      <div className="flex items-center gap-2">
-                        <span className="w-2 h-2 rounded-full bg-[#ef5b1b]" />
-                        Auth + phân quyền
+
+                <div className="rounded-2xl border border-white/10 bg-white/5 p-6">
+                  <div className="text-sm font-extrabold text-white/80">Roadmap triển khai</div>
+                  <div className="mt-4 space-y-3 text-sm text-white/80">
+                    {[
+                      'Auth + phân quyền',
+                      'Menu + danh mục',
+                      'Order + bếp + bàn',
+                      'Thanh toán + loyalty + analytics',
+                    ].map((line) => (
+                      <div key={line} className="flex items-center gap-2">
+                        <span className="h-2 w-2 rounded-full bg-[#ef5b1b]" />
+                        {line}
                       </div>
-                      <div className="flex items-center gap-2">
-                        <span className="w-2 h-2 rounded-full bg-[#ef5b1b]" />
-                        Menu + danh mục
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="w-2 h-2 rounded-full bg-[#ef5b1b]" />
-                        Order + bếp + bàn
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="w-2 h-2 rounded-full bg-[#ef5b1b]" />
-                        Thanh toán + loyalty + analytics
-                      </div>
-                    </div>
+                    ))}
                   </div>
                 </div>
               </div>
@@ -354,17 +409,17 @@ const HomePage: React.FC = () => {
           </div>
         </section>
 
-        <footer className="border-t border-gray-100 py-10">
-          <div className="max-w-6xl mx-auto px-4">
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+        <footer id="contact" className="border-t border-gray-100 py-10">
+          <div className="mx-auto max-w-6xl px-4">
+            <div className="grid grid-cols-1 gap-8 md:grid-cols-4">
               <div>
                 <div className="flex items-center gap-2">
-                  <div className="w-9 h-9 rounded-xl bg-[#ef5b1b] text-white flex items-center justify-center font-bold">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#ef5b1b] text-sm font-extrabold text-white">
                     OR
                   </div>
                   <div className="font-extrabold text-gray-900">OrderRestaurant</div>
                 </div>
-                <div className="mt-3 text-sm text-gray-600 leading-relaxed">
+                <div className="mt-3 text-sm leading-relaxed text-gray-600">
                   Hệ thống đặt món và quản trị nhà hàng hiện đại, tối ưu từ vận hành đến báo cáo.
                 </div>
               </div>
@@ -372,9 +427,15 @@ const HomePage: React.FC = () => {
               <div>
                 <div className="font-extrabold text-gray-900">Liên kết</div>
                 <div className="mt-3 space-y-2 text-sm text-gray-600">
-                  <a href="#features" className="block hover:text-[#ef5b1b]">Hệ thống bếp</a>
-                  <a href="#solutions" className="block hover:text-[#ef5b1b]">Quản lý bàn</a>
-                  <a href="#reviews" className="block hover:text-[#ef5b1b]">Menu số</a>
+                  <a href="#features" className="block hover:text-[#ef5b1b]">
+                    Tính năng
+                  </a>
+                  <a href="#about" className="block hover:text-[#ef5b1b]">
+                    Giới thiệu
+                  </a>
+                  <a href="#reviews" className="block hover:text-[#ef5b1b]">
+                    Khách hàng
+                  </a>
                 </div>
               </div>
 
@@ -390,17 +451,25 @@ const HomePage: React.FC = () => {
               <div>
                 <div className="font-extrabold text-gray-900">Tài khoản</div>
                 <div className="mt-3 space-y-2 text-sm text-gray-600">
-                  <Link to="/login" className="block hover:text-[#ef5b1b]">Đăng nhập</Link>
-                  <Link to="/register" className="block hover:text-[#ef5b1b]">Đăng ký</Link>
+                  <Link to="/login" className="block hover:text-[#ef5b1b]">
+                    Đăng nhập
+                  </Link>
+                  <Link to="/register" className="block hover:text-[#ef5b1b]">
+                    Đăng ký
+                  </Link>
                 </div>
               </div>
             </div>
 
-            <div className="mt-10 text-xs text-gray-500 flex flex-col sm:flex-row gap-2 sm:items-center sm:justify-between">
+            <div className="mt-10 flex flex-col gap-2 text-xs text-gray-500 sm:flex-row sm:items-center sm:justify-between">
               <div>© {new Date().getFullYear()} OrderRestaurant. All rights reserved.</div>
               <div className="flex items-center gap-4">
-                <a href="#" className="hover:text-[#ef5b1b]">Điều khoản</a>
-                <a href="#" className="hover:text-[#ef5b1b]">Chính sách</a>
+                <a href="#" className="hover:text-[#ef5b1b]">
+                  Điều khoản
+                </a>
+                <a href="#" className="hover:text-[#ef5b1b]">
+                  Chính sách
+                </a>
               </div>
             </div>
           </div>
