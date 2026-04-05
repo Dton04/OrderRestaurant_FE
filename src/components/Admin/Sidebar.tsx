@@ -6,6 +6,7 @@ import {
   LayoutDashboard,
   LogOut,
   Settings,
+  TicketPercent,
   Users,
   UtensilsCrossed,
 } from 'lucide-react';
@@ -33,6 +34,7 @@ const AdminSidebar: React.FC = () => {
     { icon: Users, label: 'Quản lý bàn', path: '/admin/tables'},
     { icon: UtensilsCrossed, label: 'Thực đơn', path: '/admin/menu' },
     { icon: UtensilsCrossed, label: 'Danh mục', path: '/admin/categories' },
+    { icon: TicketPercent, label: 'Voucher', path: '/admin/vouchers' },
     { icon: Gift, label: 'Loyalty', path: '/admin/loyalty' },
     { icon: BarChart3, label: 'Báo cáo', path: '/admin/reports' },
     { icon: Settings, label: 'Cài đặt', path: '/admin/settings' },
