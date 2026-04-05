@@ -6,6 +6,7 @@ import {
   LogOut,
   HelpCircle,
   LayoutDashboard,
+  Settings,
 } from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 
@@ -15,6 +16,7 @@ const menu = [
   { icon: FileText, label: 'KDS View', path: '/staff/kds' },
   { icon: FileText, label: 'Billing', path: '/staff/billing' },
   { icon: Users, label: 'Staff Schedule', path: '/staff/schedule' },
+  { icon: Settings, label: 'Cài đặt', path: '/staff/settings' },
 ];
 
 const StaffSidebarNew: React.FC = () => {
