@@ -31,6 +31,7 @@ function RequireChef({ children }: { children: React.ReactNode }) {
   const token = localStorage.getItem('token');
   const userRaw = localStorage.getItem('user');
   let role = '';
+  let roleId: number | null = null;
   if (userRaw) {
     try {
       const parsed: unknown = JSON.parse(userRaw);
@@ -38,6 +39,16 @@ function RequireChef({ children }: { children: React.ReactNode }) {
         parsed && typeof parsed === 'object' && 'role' in parsed
           ? String((parsed as Record<string, unknown>).role || '')
           : '';
+      const parsedRoleId =
+        parsed && typeof parsed === 'object' && 'role_id' in parsed
+          ? (parsed as Record<string, unknown>).role_id
+          : undefined;
+      if (typeof parsedRoleId === 'number') {
+        roleId = parsedRoleId;
+      } else if (typeof parsedRoleId === 'string' && parsedRoleId.trim() !== '') {
+        const n = Number(parsedRoleId);
+        roleId = Number.isFinite(n) ? n : null;
+      }
     } catch {
       role = '';
     }
@@ -47,7 +58,7 @@ function RequireChef({ children }: { children: React.ReactNode }) {
     return <Navigate to="/login" replace state={{ from: location }} />;
   }
 
-  if (role.toLowerCase() !== 'chef') {
+  if (role.toLowerCase() !== 'chef' && roleId !== 4) {
     return <Navigate to="/" replace />;
   }
 

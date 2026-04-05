@@ -58,8 +58,11 @@ const LoginPage: React.FC = () => {
       console.log('Login success:', response);
       localStorage.setItem('token', response.access_token);
       localStorage.setItem('refresh_token', response.refresh_token);
-      localStorage.setItem('user', JSON.stringify(response.user));
-      const role = String(response.user?.role || '');
+      const normalizedRole = String(response.user?.role || '').toLowerCase();
+      const userToStore =
+        normalizedRole === 'chef' ? { ...response.user, role_id: 4 } : response.user;
+      localStorage.setItem('user', JSON.stringify(userToStore));
+      const role = String(userToStore?.role || '');
       if (role.toLowerCase() === 'admin') {
         const state = location.state as { from?: { pathname?: string } } | null;
         const redirectTo = state?.from?.pathname?.startsWith('/admin')

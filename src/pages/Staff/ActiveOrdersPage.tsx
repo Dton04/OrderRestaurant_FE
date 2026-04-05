@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   Search,
   Plus,
@@ -236,6 +236,7 @@ const ActiveOrdersPage: React.FC = () => {
     const user = parseStoredUser();
     const payload: CreateOrderDto = {
       staff_id: user?.id,
+      table_id: selectedTable?.id,
       total_amount: subtotal,
       discount_amount: discountAmount,
       final_amount: total,
@@ -297,7 +298,7 @@ const ActiveOrdersPage: React.FC = () => {
         return;
       }
 
-      await orderApi.update(currentOrderId, { status: 'IN_PROGRESS' });
+      await orderApi.update(currentOrderId, { status: 'PREPARING' });
       setFeedbackType('success');
       setFeedback(`Đã gửi bếp thành công cho đơn ${draftOrderCode}.`);
     } catch (err) {
@@ -339,7 +340,7 @@ const ActiveOrdersPage: React.FC = () => {
                 </div>
               </div>
               <div className="flex w-full rounded-xl bg-[#e7e8e9] p-1 xl:w-auto">
-                {categories.slice(0, 3).map((category, index) => {
+                {categories.map((category, index) => {
                   const active = category.id === activeCategoryId;
 
                   return (
@@ -352,7 +353,7 @@ const ActiveOrdersPage: React.FC = () => {
                           : 'text-[#59413a] hover:text-[#191c1d]'
                       }`}
                     >
-                      {categoryTabLabels[index] || category.name}
+                      {categoryTabLabels[index] ?? category.name}
                     </button>
                   );
                 })}

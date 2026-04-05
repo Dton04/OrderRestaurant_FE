@@ -1,41 +1,37 @@
-import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Search, Bell, User, CheckCircle } from 'lucide-react';
+import orderApi from '../../api/order';
+import type { Order } from '../../types/order';
 
 const ChefHistoryPage: React.FC = () => {
-  const [orders, setOrders] = useState([]);
+  const [orders, setOrders] = useState<Order[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('Tất cả');
 
-  // Lọc đơn hàng theo Tab
-  const filteredOrders = orders.filter((order: any) => {
-    if (activeTab === 'Tất cả') return true;
-    if (activeTab === 'Phòng VIP') return order?.table?.area === 'VIP';
-    if (activeTab === 'Mang về') return order?.type === 'take-away' || order?.isTakeAway === true;
-    return true;
-  });
+  const reload = useCallback(async () => {
+    const all = await orderApi.findAll();
+    const done = all.filter((o) => o.status === 'READY' || o.status === 'COMPLETED');
+    setOrders(done);
+  }, []);
+
+  const filteredOrders = useMemo(() => {
+    if (activeTab === 'Tất cả') return orders;
+    return orders;
+  }, [activeTab, orders]);
 
   useEffect(() => {
-    const fetchHistoryOrders = async () => {
+    const run = async () => {
       try {
-        const token = localStorage.getItem('token') || localStorage.getItem('access_token'); 
-        
-        const response = await axios.get('http://localhost:3000/orders/history', {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
-        });
-
-        setOrders(response.data);
-        setIsLoading(false);
+        setIsLoading(true);
+        await reload();
       } catch (error) {
-        console.error("Lỗi khi lấy lịch sử đơn hàng:", error);
+        console.error('Lỗi khi lấy lịch sử đơn hàng:', error);
+      } finally {
         setIsLoading(false);
       }
     };
-
-    fetchHistoryOrders();
-  }, []);
+    void run();
+  }, [reload]);
 
   return (
     <div className="flex flex-col h-full relative pb-10">
@@ -119,51 +115,55 @@ const ChefHistoryPage: React.FC = () => {
               Chưa có đơn hàng nào trong lịch sử.
             </div>
           ) : (
-            filteredOrders.map((order: any) => {
-              const isTakeaway = order.order_type === 'TAKE_AWAY' || order.type === 'take-away' || order.isTakeAway;
-
-              let tagText = "ĐÃ PHỤC VỤ";
-              let tagColor = "text-gray-500";
-              let borderColor = "border-gray-200";
-
-              if (isTakeaway) {
-                tagText = "MANG VỀ ĐÃ GIAO";
-              }
+            filteredOrders.map((order) => {
+              const tagText = 'ĐÃ PHỤC VỤ';
+              const tagColor = "text-gray-500";
+              const borderColor = "border-gray-200";
+              const createdDateRaw = order.created_at;
+              const createdDate = createdDateRaw ? new Date(createdDateRaw) : null;
+              const createdDateValid =
+                createdDate && !Number.isNaN(createdDate.getTime())
+                  ? createdDate
+                  : null;
 
               return (
-                <div key={order.id || order._id} className={`bg-white rounded-3xl p-6 shadow-sm border ${borderColor} flex flex-col h-full relative overflow-hidden opacity-90 hover:opacity-100 transition-opacity`}>
+                <div key={String(order.id)} className={`bg-white rounded-3xl p-6 shadow-sm border ${borderColor} flex flex-col h-full relative overflow-hidden opacity-90 hover:opacity-100 transition-opacity`}>
                   
                   <div className="flex justify-between items-start mb-6">
                     <div>
                       <p className={`text-xs font-bold uppercase tracking-wider mb-1 ${tagColor}`}>{tagText}</p>
                       <h3 className="text-2xl font-extrabold text-gray-900">
-                        {isTakeaway ? `#ORDER-${order.id}` : `Bàn #${order.table_id || order.table?.id || '?'}`}
+                        {order.table_id ? `Bàn #${String(order.table_id)}` : `#ORDER-${String(order.id)}`}
                       </h3>
                     </div>
                     <div className="text-right">
                       <p className="text-sm font-bold text-gray-900">
-                        {new Date(order.created_at || order.createdAt || Date.now()).toLocaleDateString('vi-VN')}
+                        {createdDateValid
+                          ? createdDateValid.toLocaleDateString('vi-VN')
+                          : '--/--/----'}
                       </p>
                       <p className="text-sm font-bold text-gray-500 flex items-center gap-1 justify-end mt-1">
-                        {new Date(order.created_at || order.createdAt || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        {createdDateValid
+                          ? createdDateValid.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                          : '--:--'}
                       </p>
                     </div>
                   </div>
 
                   <div className="space-y-4 mb-8 flex-1">
                     {/* Render các món ăn trong đơn */}
-                    {(order.order_items || order.items || []).map((item: any, idx: number) => (
+                    {(order.order_items || []).map((item, idx) => (
                       <div key={idx} className="flex gap-4">
-                        <div className={`w-8 h-8 rounded flex items-center justify-center text-sm font-bold shrink-0 ${isTakeaway ? 'bg-[#fcece6] text-[#ef5b1b]' : 'bg-[#f4f5f6] text-gray-600'}`}>
+                        <div className="w-8 h-8 rounded flex items-center justify-center text-sm font-bold shrink-0 bg-[#f4f5f6] text-gray-600">
                           x{item.quantity || 1}
                         </div>
                         <div className="flex-1">
                           <div className="flex justify-between items-start">
                             <h4 className="font-bold text-gray-600 text-lg leading-tight w-2/3">
-                              {item.dish?.name || item.name || 'Tên món'}
+                              {String(item.dish_id)}
                             </h4>
                             <span className="text-sm font-bold bg-[#EAEAEA] px-2 py-0.5 rounded-full text-gray-500 whitespace-nowrap">
-                              VNĐ {((item.price || item.dish?.price || item.final_amount || 0) / 1000)}k
+                              VNĐ --
                             </span>
                           </div>
                           {item.notes && <p className="text-sm text-gray-400 mt-1">{item.notes}</p>}
@@ -171,7 +171,7 @@ const ChefHistoryPage: React.FC = () => {
                       </div>
                     ))}
                     
-                    {!(order.order_items || order.items)?.length && (
+                    {!order.order_items?.length && (
                       <p className="text-sm text-gray-400 italic">Dữ liệu món ăn trống</p>
                     )}
                   </div>

@@ -1,50 +1,130 @@
-import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Search, Bell, User, CheckCircle2 } from 'lucide-react';
+import orderApi from '../../api/order';
+import type { KitchenQueueItem } from '../../api/order';
+
+type QueueOrderItem = {
+  item_id: string | number;
+  dish_name: string;
+  quantity: number;
+  notes?: string | null;
+  status: string;
+};
+
+type QueueOrder = {
+  order_key: string;
+  order_id?: string | number;
+  table_number: string;
+  created_at: string;
+  order_final_amount?: string | number;
+  items: QueueOrderItem[];
+};
 
 const ChefDashboardPage: React.FC = () => {
-  const [orders, setOrders] = useState([]);
+  const [queueItems, setQueueItems] = useState<KitchenQueueItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('Tất cả');
-  const [stats, setStats] = useState({ waiting: 12, cooking: 5, completed: 48 });
+  const [stats, setStats] = useState({ waiting: 0, cooking: 0, completed: 0 });
 
-  // Handle Hoàn tất đơn hàng
-  const handleCompleteOrder = async (orderId: string) => {
-    try {
-      const token = localStorage.getItem('token') || localStorage.getItem('access_token');
-      
-      // 1. Gửi tin (Gọi API PATCH)
-      await axios.patch(`http://localhost:3000/orders/${orderId}/status`, 
-        { status: 'READY' },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+  const reloadQueue = useCallback(async () => {
+    const items = await orderApi.getKitchenQueue();
+    setQueueItems(items);
+  }, []);
 
-      // 2. Dọn dẹp (Lọc bỏ đơn hàng khỏi state)
-      // Ép kiểu String để đảm bảo chắn chắn khớp ID
-      setOrders(prevOrders => prevOrders.filter((o: any) => String(o._id) !== String(orderId) && String(o.id) !== String(orderId)));
+  useEffect(() => {
+    const run = async () => {
+      try {
+        setIsLoading(true);
+        await reloadQueue();
+      } catch (error) {
+        console.error('Lỗi khi lấy hàng đợi bếp:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    void run();
+  }, [reloadQueue]);
 
-      // Thông báo thành công
-      alert(`Đã hoàn tất đơn hàng #${orderId} thành công!`);
+  useEffect(() => {
+    const intervalId = window.setInterval(() => {
+      void reloadQueue();
+    }, 3000);
+    return () => window.clearInterval(intervalId);
+  }, [reloadQueue]);
 
-      // 3. Nhảy số (Giả định đơn đang ở trạng thái 'Đang nấu' chuyển thành 'Xong')
-      setStats(prev => ({
-        ...prev,
-        cooking: prev.cooking > 0 ? prev.cooking - 1 : 0, 
-        completed: prev.completed + 1
-      }));
-    } catch (error) {
-      console.error("Lỗi khi hoàn tất đơn hàng:", error);
-      alert("Lỗi kết nối máy chủ! Chưa thể hoàn tất đơn.");
+  useEffect(() => {
+    const waiting = queueItems.filter((i) => i.status === 'PENDING').length;
+    const cooking = queueItems.filter((i) => i.status === 'PREPARING').length;
+    setStats((prev) => ({ ...prev, waiting, cooking }));
+  }, [queueItems]);
+
+  const orders = useMemo<QueueOrder[]>(() => {
+    const grouped = new Map<string, QueueOrder>();
+
+    queueItems.forEach((item) => {
+      const orderKey =
+        item.order_id != null ? String(item.order_id) : `table:${item.table_number}`;
+      const existing = grouped.get(orderKey);
+      const normalizedItem: QueueOrderItem = {
+        item_id: item.item_id,
+        dish_name: item.dish_name,
+        quantity: item.quantity,
+        notes: item.notes,
+        status: item.status,
+      };
+
+      if (!existing) {
+        grouped.set(orderKey, {
+          order_key: orderKey,
+          order_id: item.order_id,
+          table_number: item.table_number,
+          created_at: item.created_at,
+          order_final_amount: item.order_final_amount,
+          items: [normalizedItem],
+        });
+        return;
+      }
+
+      existing.items = [...existing.items, normalizedItem];
+    });
+
+    return Array.from(grouped.values()).sort((a, b) => {
+      const ta = new Date(a.created_at).getTime();
+      const tb = new Date(b.created_at).getTime();
+      return ta - tb;
+    });
+  }, [queueItems]);
+
+  const lineTotalByItemId = useMemo(() => {
+    const map = new Map<string, string | number>();
+    queueItems.forEach((item) => {
+      map.set(String(item.item_id), item.line_total ?? 0);
+    });
+    return map;
+  }, [queueItems]);
+
+  const formatCompactCurrency = (value: string | number | undefined) => {
+    const n =
+      typeof value === 'number'
+        ? value
+        : typeof value === 'string'
+          ? Number(value)
+          : NaN;
+    if (!Number.isFinite(n)) {
+      return 'VNĐ 0';
     }
+    if (n >= 1000) {
+      return `VNĐ ${Math.round(n / 1000)}k`;
+    }
+    return `VNĐ ${Math.round(n)}`;
   };
 
-  // Lọc đơn hàng theo Tab
-  const filteredOrders = orders.filter((order: any) => {
-    if (activeTab === 'Tất cả') return true;
-    if (activeTab === 'Phòng VIP') return order?.table?.area === 'VIP';
-    if (activeTab === 'Mang về') return order?.type === 'take-away' || order?.isTakeAway === true;
-    return true;
-  });
+  const filteredOrders = useMemo(() => {
+    if (activeTab === 'Tất cả') {
+      return orders;
+    }
+    return orders;
+  }, [activeTab, orders]);
 
   // Hàm hỗ trợ tính toán thời gian chờ & render CSS (Dùng cho dữ liệu thực từ API)
   const getWaitTimeClass = (createdAt: string | Date | undefined) => {
@@ -61,31 +141,6 @@ const ChefDashboardPage: React.FC = () => {
     }
     return 'text-[#b43516]';
   };
-
-  useEffect(() => {
-    const fetchActiveOrders = async () => {
-      try {
-        // Lấy Token từ localStorage để không bị lỗi 401 Unauthorized
-        // Ghi chú: App đang dùng key 'token' thay vì 'access_token' nên ưu tiên 'token' trước
-        const token = localStorage.getItem('token') || localStorage.getItem('access_token');
-
-        const response = await axios.get('http://localhost:3000/orders/active', {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
-        });
-
-        // Cập nhật danh sách đơn hàng vào State
-        setOrders(response.data);
-        setIsLoading(false);
-      } catch (error) {
-        console.error("Lỗi khi lấy đơn hàng:", error);
-        setIsLoading(false);
-      }
-    };
-
-    fetchActiveOrders();
-  }, []); // [] đảm bảo chỉ chạy 1 lần duy nhất khi load trang
 
   return (
     <div className="flex flex-col h-full relative pb-20">
@@ -169,22 +224,25 @@ const ChefDashboardPage: React.FC = () => {
               Không có đơn hàng nào trong mục này.
             </div>
           ) : (
-            filteredOrders.map((order: any) => {
+            filteredOrders.map((order) => {
               // Phân loại thẻ:
-              const isTakeaway = order.order_type === 'TAKE_AWAY' || order.type === 'take-away' || order.isTakeAway;
-              const waitClass = getWaitTimeClass(order.created_at || order.createdAt);
+              const waitClass = getWaitTimeClass(order.created_at);
               const isHighPriority = waitClass.includes('red'); // Nếu quá 10 phút => Ưu tiên cao
 
               let tagText = "ĐƠN MỚI";
               let tagColor = "text-gray-500";
               let borderColor = "border-gray-100";
               let sideBorder = null;
-              let statusText = "ĐANG CHUẨN BỊ";
+              let statusText = "ĐANG CHỜ";
               let statusBg = "bg-[#ffba08]";
 
-              if (isTakeaway) {
-                tagText = "MANG VỀ";
-              } else if (isHighPriority) {
+              const hasPreparing = order.items.some((it) => it.status === 'PREPARING');
+              if (hasPreparing) {
+                statusText = 'ĐANG NẤU';
+                statusBg = 'bg-[#b43516]';
+              }
+
+              if (isHighPriority) {
                 tagText = "ƯU TIÊN CAO";
                 tagColor = "text-red-600";
                 borderColor = "border-red-100";
@@ -193,46 +251,71 @@ const ChefDashboardPage: React.FC = () => {
                 statusBg = "bg-[#ef4444]";
               }
 
+              const createdDate = new Date(order.created_at);
+              const createdTime = Number.isNaN(createdDate.getTime())
+                ? null
+                : createdDate;
+
               return (
-                <div key={order.id || order._id} className={`bg-white rounded-3xl p-6 shadow-sm border ${borderColor} flex flex-col h-full relative overflow-hidden`}>
+                <div key={order.order_key} className={`bg-white rounded-3xl p-6 shadow-sm border ${borderColor} flex flex-col h-full relative overflow-hidden`}>
                   {sideBorder}
                   
                   <div className="flex justify-between items-start mb-6">
                     <div>
                       <p className={`text-xs font-bold uppercase tracking-wider mb-1 ${tagColor}`}>{tagText}</p>
                       <h3 className="text-2xl font-extrabold text-gray-900">
-                        {isTakeaway ? `#ORDER-${order.id}` : `Bàn #${order.table_id || order.table?.id || '?'}`}
+                        {order.table_number && order.table_number !== 'N/A'
+                          ? `Bàn #${order.table_number}`
+                          : `#ORDER-${String(order.order_id ?? order.order_key)}`}
                       </h3>
                     </div>
                     <div className="text-right">
                       <p className="text-sm font-bold text-gray-900">
-                        {new Date(order.created_at || order.createdAt || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        {createdTime
+                          ? createdTime.toLocaleTimeString([], {
+                              hour: '2-digit',
+                              minute: '2-digit',
+                            })
+                          : '--:--'}
                       </p>
                       <p className={`text-sm font-bold flex items-center gap-1 justify-end mt-1 ${waitClass}`}>
-                        {Math.floor((new Date().getTime() - new Date(order.created_at || order.createdAt || Date.now()).getTime()) / 60000)} phút
+                        {createdTime
+                          ? Math.floor(
+                              (new Date().getTime() - createdTime.getTime()) /
+                                60000,
+                            )
+                          : 0}{' '}
+                        phút
                       </p>
+                      <div className="mt-2 flex justify-end">
+                        <span className="text-xs font-bold bg-[#EAEAEA] px-2 py-1 rounded-full text-gray-700 whitespace-nowrap">
+                          {formatCompactCurrency(order.order_final_amount)}
+                        </span>
+                      </div>
                     </div>
                   </div>
 
                   <div className="space-y-4 mb-8 flex-1">
                     {/* Render các món ăn trong đơn */}
-                    {(order.order_items || order.items || []).map((item: any, idx: number) => (
+                    {order.items.map((item, idx) => (
                       <div key={idx} className="flex gap-4">
-                        <div className={`w-8 h-8 rounded flex items-center justify-center text-sm font-bold shrink-0 ${isTakeaway ? 'bg-[#fcece6] text-[#ef5b1b]' : 'bg-[#f4f5f6] text-gray-600'}`}>
+                        <div className="w-8 h-8 rounded flex items-center justify-center text-sm font-bold shrink-0 bg-[#f4f5f6] text-gray-600">
                           x{item.quantity || 1}
                         </div>
                         <div className="flex-1">
                           <div className="flex justify-between items-start">
                             <h4 className="font-bold text-gray-900 text-lg leading-tight w-2/3">
-                              {item.dish?.name || item.name || 'Tên món'}
+                              {item.dish_name || 'Tên món'}
                             </h4>
                             <span className="text-sm font-bold bg-[#EAEAEA] px-2 py-0.5 rounded-full text-gray-700 whitespace-nowrap">
-                              VNĐ {((item.price || item.dish?.price || item.final_amount || 0) / 1000)}k
+                              {formatCompactCurrency(
+                                lineTotalByItemId.get(String(item.item_id)),
+                              )}
                             </span>
                           </div>
                           {/* Nhiệm vụ 11: Hiển thị ghi chú với highlight từ khóa quan trọng */}
-                          {(item.note || item.notes) && (() => {
-                            const noteText = item.note || item.notes;
+                          {item.notes && (() => {
+                            const noteText = item.notes;
                             const urgentKeywords = ['Dị ứng', 'dị ứng', 'Không cay', 'không cay', 'Gấp', 'gấp', 'Allergi', 'KHẨN'];
                             const hasUrgent = urgentKeywords.some(kw => noteText.includes(kw));
 
@@ -267,7 +350,7 @@ const ChefDashboardPage: React.FC = () => {
                     ))}
                     
                     {/* Fallback nếu API mảng items rỗng */}
-                    {!(order.order_items || order.items)?.length && (
+                    {!order.items.length && (
                       <p className="text-sm text-gray-400 italic">...Đang chờ dữ liệu món ăn...</p>
                     )}
                   </div>
@@ -279,11 +362,27 @@ const ChefDashboardPage: React.FC = () => {
                       </span>
                     </div>
                     <button 
-                      onClick={() => handleCompleteOrder(order.id || order._id)}
+                      onClick={() => {
+                        const cookingItem = order.items.find((it) => it.status === 'PREPARING');
+                        const pendingItem = order.items.find((it) => it.status === 'PENDING');
+                        if (cookingItem) {
+                          void orderApi
+                            .finishCookingItem(cookingItem.item_id)
+                            .then(reloadQueue)
+                            .catch((e) => console.error('Finish item error:', e));
+                          return;
+                        }
+                        if (pendingItem) {
+                          void orderApi
+                            .startCookingItem(pendingItem.item_id)
+                            .then(reloadQueue)
+                            .catch((e) => console.error('Start item error:', e));
+                        }
+                      }}
                       className="w-full bg-[#ef5b1b] hover:bg-[#d44d15] text-white font-bold py-4 rounded-xl flex justify-center items-center gap-2 transition-colors active:scale-95"
                     >
                       <CheckCircle2 size={20} />
-                      Xác nhận hoàn tất
+                      {hasPreparing ? 'Xác nhận hoàn tất' : 'Bắt đầu nấu'}
                     </button>
                   </div>
                 </div>
