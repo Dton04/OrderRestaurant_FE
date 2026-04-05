@@ -149,7 +149,7 @@ const AdminUsersPage: React.FC = () => {
                     {user.phone || '-'}
                   </td>
                   <td className="px-3 py-2 border border-gray-100">
-                    {user.role || 'USER'}
+                    {user.role_id || 'CUSTOMER'}
                   </td>
                   <td className="px-3 py-2 border border-gray-100">
                     <div className="flex flex-wrap gap-2">

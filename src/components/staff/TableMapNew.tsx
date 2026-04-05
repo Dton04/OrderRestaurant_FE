@@ -1,5 +1,4 @@
-import React, { useEffect, useState } from 'react';
-import { tableApi } from '../../api/table';
+import React from 'react';
 
 type TableStatus = 'FREE' | 'OCCUPIED' | 'RESERVED' | 'CLEANING';
 
@@ -8,7 +7,9 @@ type StaffTable = {
   table_number?: string;
   capacity?: number;
   status?: TableStatus | string;
+  area_id?: number;
   guests?: number;
+  guestsField?: 'guests' | 'guest_count' | 'current_guest' | 'current_guests' | 'number_of_guests';
 };
 
 const statusColor: Record<TableStatus, string> = {
@@ -29,43 +30,12 @@ function isTableStatus(value: unknown): value is TableStatus {
   return value === 'FREE' || value === 'OCCUPIED' || value === 'RESERVED' || value === 'CLEANING';
 }
 
-const TableMapNew: React.FC<{ onSelectTable: (table: StaffTable) => void }> = ({ onSelectTable }) => {
-  const [tables, setTables] = useState<StaffTable[]>([]);
-
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    const fetchTables = async () => {
-      try {
-        setLoading(true);
-        const payload = await tableApi.findAll();
-
-        if (Array.isArray(payload)) {
-          setTables(payload as StaffTable[]);
-        } else {
-          setTables([]);
-          console.warn('TableMapNew: unexpected response payload from tableApi.findAll()', payload);
-        }
-
-        setError(null);
-      } catch (err) {
-        console.error('Failed to fetch tables in TableMapNew:', err);
-        setError('Không tải được danh sách bàn. Vui lòng thử lại.');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchTables();
-  }, []);
-
-  if (loading) {
-    return <div className="text-center p-8 text-gray-500">Đang tải sơ đồ bàn...</div>;
-  }
-
-  if (error) {
-    return <div className="text-center p-8 text-red-500">{error}</div>;
+const TableMapNew: React.FC<{
+  tables: StaffTable[];
+  onSelectTable: (table: StaffTable) => void;
+}> = ({ tables, onSelectTable }) => {
+  if (tables.length === 0) {
+    return <div className="text-center p-8 text-gray-500">Chưa có dữ liệu bàn.</div>;
   }
 
   return (

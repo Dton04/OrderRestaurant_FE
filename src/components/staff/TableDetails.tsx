@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import tableApi from '../../api/table';
 
 type TableStatus = 'FREE' | 'OCCUPIED' | 'RESERVED' | 'CLEANING';
 
@@ -7,13 +9,50 @@ type StaffTable = {
   table_number?: string;
   capacity?: number;
   status?: TableStatus | string;
+  area_id?: number;
   guests?: number;
+  guestsField?: 'guests' | 'guest_count' | 'current_guest' | 'current_guests' | 'number_of_guests';
 };
 
-const TableDetails: React.FC<{ table: StaffTable | null }> = ({ table }) => {
+const TABLE_GUESTS_STORAGE_KEY = 'staff.tableGuests';
+const ACTIVE_ORDER_TABLE_KEY = 'staff.activeOrderTable';
+
+const saveGuestOverride = (tableId: string | number, value: number) => {
+  const raw = localStorage.getItem(TABLE_GUESTS_STORAGE_KEY);
+  const current = raw ? (JSON.parse(raw) as Record<string, number>) : {};
+  current[String(tableId)] = value;
+  localStorage.setItem(TABLE_GUESTS_STORAGE_KEY, JSON.stringify(current));
+};
+
+const extractApiMessage = (error: unknown) => {
+  if (typeof error !== 'object' || error === null) {
+    return null;
+  }
+  const response = (error as { response?: { data?: unknown } }).response;
+  if (!response || typeof response.data !== 'object' || response.data === null) {
+    return null;
+  }
+  const data = response.data as { message?: unknown };
+  if (typeof data.message === 'string') {
+    return data.message;
+  }
+  if (Array.isArray(data.message) && data.message.length > 0) {
+    return String(data.message[0]);
+  }
+  return null;
+};
+
+const TableDetails: React.FC<{
+  table: StaffTable | null;
+  onGuestSaved?: (tableId: string | number, guests: number) => void;
+}> = ({ table, onGuestSaved }) => {
+  const navigate = useNavigate();
   const [guestCount, setGuestCount] = useState(() =>
     table && typeof table.guests === 'number' ? table.guests : 0,
   );
+  const [saving, setSaving] = useState(false);
+  const [message, setMessage] = useState<string | null>(null);
+  const [messageType, setMessageType] = useState<'success' | 'error' | null>(null);
 
   const incrementGuest = () => {
     if (!table) return;
@@ -23,6 +62,60 @@ const TableDetails: React.FC<{ table: StaffTable | null }> = ({ table }) => {
 
   const decrementGuest = () => {
     setGuestCount((prev) => Math.max(prev - 1, 0));
+  };
+
+  const persistGuests = async (value: number) => {
+    if (!table) {
+      return;
+    }
+
+    const tableId = Number(table.id);
+    if (!Number.isFinite(tableId)) {
+      setMessageType('error');
+      setMessage('Không xác định được mã bàn để lưu dữ liệu.');
+      return;
+    }
+
+    try {
+      setSaving(true);
+      setMessage(null);
+      saveGuestOverride(table.id, value);
+      onGuestSaved?.(table.id, value);
+
+      if (table.guestsField) {
+        const latest = await tableApi.findOne(tableId);
+        const basePayload: Record<string, unknown> = {
+          table_number: latest.table_number || table.table_number || String(table.id),
+          capacity:
+            typeof latest.capacity === 'number'
+              ? latest.capacity
+              : (typeof table.capacity === 'number' ? table.capacity : 4),
+          status: latest.status || table.status || 'FREE',
+          area_id:
+            typeof latest.area_id === 'number'
+              ? latest.area_id
+              : (typeof table.area_id === 'number' ? table.area_id : 1),
+        };
+        basePayload[table.guestsField] = value;
+        await tableApi.update(tableId, basePayload);
+        setMessageType('success');
+        setMessage('Đã lưu số người thành công.');
+      } else {
+        setMessageType('success');
+        setMessage('Đã lưu số người cục bộ (backend chưa hỗ trợ trường guests).');
+      }
+    } catch (error) {
+      console.error('Failed to persist table guests:', error);
+      setMessageType('error');
+      const apiMessage = extractApiMessage(error);
+      setMessage(
+        apiMessage
+          ? `Không lưu được số người: ${apiMessage}`
+          : 'Không lưu được số người. Vui lòng thử lại.',
+      );
+    } finally {
+      setSaving(false);
+    }
   };
 
   if (!table) {
@@ -55,18 +148,58 @@ const TableDetails: React.FC<{ table: StaffTable | null }> = ({ table }) => {
 
       <div className="flex gap-2">
         <button
-          onClick={() => alert(`Cập nhật số người: ${guestCount}`)}
-          className="flex-1 py-2 rounded-lg bg-orange-500 text-white font-semibold hover:bg-orange-600"
+          onClick={() => {
+            void persistGuests(guestCount);
+          }}
+          disabled={saving}
+          className="flex-1 py-2 rounded-lg bg-orange-500 text-white font-semibold hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-60"
         >
-          Lưu số người
+          {saving ? 'Đang lưu...' : 'Lưu số người'}
         </button>
         <button
-          onClick={() => setGuestCount(0)}
-          className="flex-1 py-2 rounded-lg border border-zinc-300 text-zinc-700 hover:bg-zinc-100"
+          onClick={() => {
+            setGuestCount(0);
+            void persistGuests(0);
+          }}
+          disabled={saving}
+          className="flex-1 py-2 rounded-lg border border-zinc-300 text-zinc-700 hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-60"
         >
           Xóa số người
         </button>
       </div>
+
+      {message ? (
+        <div
+          className={`mt-3 rounded-lg px-3 py-2 text-sm ${
+            messageType === 'success'
+              ? 'bg-emerald-50 text-emerald-700'
+              : 'bg-red-50 text-red-700'
+          }`}
+        >
+          {message}
+        </div>
+      ) : null}
+
+      <button
+        onClick={() => {
+          const selectedTablePayload = {
+            id: table.id,
+            table_number: table.table_number,
+            guests: guestCount,
+            capacity: table.capacity,
+            status: table.status,
+          };
+          localStorage.setItem(ACTIVE_ORDER_TABLE_KEY, JSON.stringify(selectedTablePayload));
+          navigate('/staff/active-orders', {
+            state: {
+              selectedTable: selectedTablePayload,
+            },
+          });
+        }}
+        className="mt-3 w-full rounded-lg bg-orange-500 py-2 text-sm font-semibold text-white hover:bg-orange-600"
+      >
+        Lên đơn
+      </button>
     </div>
   );
 };

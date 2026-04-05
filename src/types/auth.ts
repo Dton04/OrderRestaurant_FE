@@ -4,8 +4,7 @@ export interface User {
   full_name: string;
   phone: string;
   role: string;
-  address?: string;
-  timezone?: string;
+  role_id?: number;
 }
 
 export interface AuthResponse {

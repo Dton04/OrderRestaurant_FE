@@ -18,8 +18,12 @@ export const tableApi = {
     const response = await api.patch<Table>(`/tables/${id}`, data);
     return response.data;
   },
-  remove: async (id: number): Promise<void> => {
-    await api.delete(`/tables/${id}`);
+  remove: async (id: number | string): Promise<void> => {
+    const tableId = Number(id);
+    if (Number.isNaN(tableId)) {
+      throw new Error(`Invalid table id for delete: ${id}`);
+    }
+    await api.delete(`/tables/${tableId}`);
   },
 };
 
