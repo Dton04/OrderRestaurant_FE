@@ -4,14 +4,7 @@ import {
   ShieldCheck,
   Settings as SettingsIcon,
   Camera,
-  Mail,
   Lock,
-  Phone,
-  Globe,
-  MapPin,
-  Bell,
-  Check,
-  X,
   ChevronRight,
 } from 'lucide-react';
 import { usersApi } from '../api/users';
