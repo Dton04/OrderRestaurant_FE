@@ -76,6 +76,12 @@ export const orderApi = {
     );
     return response.data.data;
   },
+  cancel: async (id: bigint | number | string): Promise<void> => {
+    await api.patch(`/orders/${id}/cancel`);
+  },
+  cancelItem: async (orderId: bigint | number | string, itemId: bigint | number | string): Promise<void> => {
+    await api.patch(`/orders/${orderId}/items/${itemId}/cancel`);
+  },
 };
 
 export default orderApi;

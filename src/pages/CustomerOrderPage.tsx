@@ -17,6 +17,7 @@ import categoryApi from '../api/category';
 import dishApi from '../api/dish';
 import tableApi from '../api/table';
 import orderApi from '../api/order';
+import { useSocket } from '../context/SocketContext';
 import type { Category } from '../types/category';
 import type { Dish } from '../types/dish';
 import type { Table } from '../types/table';
@@ -55,6 +56,8 @@ const CustomerOrderPage: React.FC = () => {
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [myOrders, setMyOrders] = useState<any[]>([]);
   const prevMyOrdersRef = useRef<any[]>([]);
+  
+  const { socket } = useSocket();
 
   useEffect(() => {
     const fetchData = async () => {
@@ -124,9 +127,17 @@ const CustomerOrderPage: React.FC = () => {
     };
 
     fetchHistory();
-    const interval = setInterval(fetchHistory, 5000);
-    return () => clearInterval(interval);
-  }, []);
+    
+    if (socket) {
+      socket.on('item_status_changed', fetchHistory);
+    }
+    
+    return () => {
+      if (socket) {
+        socket.off('item_status_changed', fetchHistory);
+      }
+    };
+  }, [socket]);
 
   const filteredDishes = useMemo(() => {
     if (activeCategoryId === 'all') return dishes;
@@ -232,9 +243,34 @@ const CustomerOrderPage: React.FC = () => {
       }
     } catch (error) {
       console.error('Checkout error:', error);
-      alert('Có lỗi xảy ra khi đặt món. Vui lòng thử lại!');
+      toast.error('Có lỗi xảy ra khi đặt món. Vui lòng thử lại!');
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleCancelOrder = async (orderId: number | string) => {
+    if (!window.confirm('Bạn có chắc chắn muốn hủy toàn bộ đơn hàng này?')) return;
+    try {
+      await orderApi.cancel(orderId);
+      toast.success('Đã hủy đơn hàng thành công!');
+      // Update local state if needed, though socket might handle it
+      const updated = await orderApi.getCustomerMyOrders();
+      setMyOrders(updated);
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Không thể hủy đơn hàng.');
+    }
+  };
+
+  const handleCancelItem = async (orderId: number | string, itemId: number | string) => {
+    if (!window.confirm('Bạn có chắc chắn muốn hủy món này?')) return;
+    try {
+      await orderApi.cancelItem(orderId, itemId);
+      toast.success('Đã hủy món ăn thành công!');
+      const updated = await orderApi.getCustomerMyOrders();
+      setMyOrders(updated);
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Không thể hủy món ăn.');
     }
   };
 
@@ -566,22 +602,48 @@ const CustomerOrderPage: React.FC = () => {
                   <div key={order.id} className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
                     <div className="flex justify-between items-center mb-3">
                       <div className="font-extrabold text-gray-900">Đơn #{order.id}</div>
-                      <div className="text-xs font-bold px-2 py-1 bg-gray-100 rounded-md text-gray-600 uppercase">
-                        {order.status}
+                      <div className="flex items-center gap-2">
+                        <div className={`text-[10px] font-bold px-2 py-0.5 rounded-md uppercase ${
+                          order.status === 'CANCELLED' ? 'bg-red-50 text-red-500' : 'bg-gray-100 text-gray-600'
+                        }`}>
+                          {order.status}
+                        </div>
+                        {order.status === 'PENDING' && (
+                          <button
+                            onClick={() => handleCancelOrder(order.id)}
+                            className="text-[10px] font-extrabold text-red-500 hover:underline"
+                          >
+                            Hủy đơn
+                          </button>
+                        )}
                       </div>
                     </div>
-                    <div className="space-y-2 mb-4">
+                    <div className="space-y-3 mb-4">
                       {order.order_items?.map((item: any, idx: number) => (
                         <div key={idx} className="flex justify-between items-start text-sm">
                           <div className="flex gap-2 text-gray-800 font-medium">
                             <span className="text-gray-500">x{item.quantity}</span>
-                            <span>{item.dish?.name || 'Món ăn'}</span>
+                            <div className="flex flex-col">
+                              <span className={item.status === 'CANCELLED' ? 'line-through text-gray-400' : ''}>
+                                {item.dish?.name || 'Món ăn'}
+                              </span>
+                              {item.status === 'PENDING' && (
+                                <button
+                                  onClick={() => handleCancelItem(order.id, item.id)}
+                                  className="text-[10px] text-left font-bold text-red-400 hover:text-red-500"
+                                >
+                                  Hủy món
+                                </button>
+                              )}
+                            </div>
                           </div>
                           <div>
                             {item.status === 'COMPLETED' ? (
                               <span className="text-green-600 text-xs font-bold bg-green-50 px-2 py-1 rounded">Đã phục vụ</span>
                             ) : item.status === 'READY' ? (
                               <span className="text-orange-500 text-xs font-bold bg-orange-50 px-2 py-1 rounded">Xong</span>
+                            ) : item.status === 'CANCELLED' ? (
+                              <span className="text-red-400 text-xs font-bold bg-red-50 px-2 py-1 rounded">Đã hủy</span>
                             ) : (
                               <span className="text-gray-400 text-xs font-medium">Chờ nấu</span>
                             )}
@@ -594,7 +656,7 @@ const CustomerOrderPage: React.FC = () => {
                         <Clock size={12} />
                         {new Date(order.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                       </div>
-                      <div className="font-extrabold text-[#ef5b1b]">
+                      <div className={`font-extrabold ${order.status === 'CANCELLED' ? 'text-gray-400' : 'text-[#ef5b1b]'}`}>
                         {Number(order.final_amount || order.total_amount).toLocaleString('vi-VN')} đ
                       </div>
                     </div>

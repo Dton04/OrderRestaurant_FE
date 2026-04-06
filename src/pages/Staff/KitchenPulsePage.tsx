@@ -5,6 +5,7 @@ import orderApi from '../../api/order';
 import type { KitchenQueueItem } from '../../api/order';
 import StaffTopBar from '../../components/staff/StaffTopBar';
 import StaffSidebarNew from '../../components/staff/StaffSidebarNew';
+import { useSocket } from '../../context/SocketContext';
 
 const KitchenPulsePage: React.FC = () => {
   const [readyItems, setReadyItems] = useState<KitchenQueueItem[]>([]);
@@ -35,11 +36,21 @@ const KitchenPulsePage: React.FC = () => {
     }
   };
 
+  const { socket } = useSocket();
+
   useEffect(() => {
     fetchQueue();
-    const interval = setInterval(fetchQueue, 5000);
-    return () => clearInterval(interval);
-  }, []);
+    
+    if (socket) {
+      socket.on('refresh_pulse', fetchQueue);
+    }
+    
+    return () => {
+      if (socket) {
+        socket.off('refresh_pulse', fetchQueue);
+      }
+    };
+  }, [socket]);
 
   // Group by order
   const groupedOrders = readyItems.reduce((acc, item) => {
