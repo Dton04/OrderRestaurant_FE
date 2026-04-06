@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import tableApi from '../../api/table';
+import orderApi from '../../api/order';
 
 type TableStatus = 'FREE' | 'OCCUPIED' | 'RESERVED' | 'CLEANING';
 
@@ -53,6 +54,27 @@ const TableDetails: React.FC<{
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [messageType, setMessageType] = useState<'success' | 'error' | null>(null);
+  const [activeOrder, setActiveOrder] = useState<any>(null);
+  const [loadingActiveOrder, setLoadingActiveOrder] = useState(false);
+
+  useEffect(() => {
+    const fetchActiveOrder = async () => {
+      if (!table || table.status !== 'OCCUPIED') {
+        setActiveOrder(null);
+        return;
+      }
+      try {
+        setLoadingActiveOrder(true);
+        const response = await orderApi.findActiveOrderByTableId(table.id);
+        setActiveOrder(response.data || null);
+      } catch (err) {
+        console.error('Failed to fetch active order for table:', err);
+      } finally {
+        setLoadingActiveOrder(false);
+      }
+    };
+    fetchActiveOrder();
+  }, [table]);
 
   const incrementGuest = () => {
     if (!table) return;
@@ -220,6 +242,51 @@ const TableDetails: React.FC<{
       >
         Lên đơn
       </button>
+
+      {table.status === 'OCCUPIED' && activeOrder && (
+        <button
+          onClick={() => {
+            const orderId = String(activeOrder.id);
+            localStorage.setItem('staff.currentOrderId', orderId);
+
+            // Set the active order table so BillingPage knows which table we are dealing with
+            const tableInfo = {
+              id: table.id,
+              table_number: table.table_number
+            };
+            localStorage.setItem('staff.activeOrderTable', JSON.stringify(tableInfo));
+
+            // Also prepare a draft just in case something relies on it
+            const draft = {
+              code: `#ORDER-${orderId}`,
+              orderId: orderId,
+              items: activeOrder.order_items?.map((oi: any) => ({
+                id: oi.dish.id,
+                name: oi.dish.name,
+                quantity: oi.quantity,
+                unitPrice: Number(oi.price_at_order),
+                note: oi.notes,
+              })) || [],
+              totalAmount: Number(activeOrder.total_amount),
+              discountAmount: Number(activeOrder.discount_amount),
+              finalAmount: Number(activeOrder.final_amount),
+              vat: Math.round(Number(activeOrder.total_amount) * 0.08),
+            };
+            localStorage.setItem('staff.billingDraft', JSON.stringify(draft));
+            
+            navigate('/staff/billing');
+          }}
+          className="w-full rounded-lg bg-emerald-600 py-2 text-sm font-bold text-white hover:bg-emerald-700 mb-3 flex items-center justify-center gap-2"
+        >
+          Thanh toán bàn này
+        </button>
+      )}
+
+      {table.status === 'OCCUPIED' && !activeOrder && loadingActiveOrder && (
+        <div className="text-center text-xs text-zinc-500 mb-3 italic">
+          Đang kiểm tra đơn hàng...
+        </div>
+      )}
 
       <div className="border-t border-zinc-100 pt-4 mt-2">
         <div className="font-bold text-sm mb-3 text-zinc-600">Cập nhật nhanh trạng thái</div>
