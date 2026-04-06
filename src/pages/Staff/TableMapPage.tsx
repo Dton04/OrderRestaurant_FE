@@ -4,6 +4,7 @@ import StaffTopBar from '../../components/staff/StaffTopBar';
 import TableMapNew from '../../components/staff/TableMapNew';
 import TableDetails from '../../components/staff/TableDetails';
 import { tableApi } from '../../api/table';
+import { useSocket } from '../../context/SocketContext';
 
 type TableStatus = 'FREE' | 'OCCUPIED' | 'RESERVED' | 'CLEANING';
 
@@ -105,6 +106,29 @@ const TableMapPage: React.FC = () => {
 
     fetchTables();
   }, []);
+
+  const { socket } = useSocket();
+
+  useEffect(() => {
+    const fetchTables = async () => {
+      try {
+        const payload = await tableApi.findAll();
+        setTables(Array.isArray(payload) ? payload.map(normalizeTable) : []);
+      } catch (err) {
+        console.error('Failed to reload tables via socket:', err);
+      }
+    };
+
+    if (socket) {
+      socket.on('refresh_tables', fetchTables);
+    }
+
+    return () => {
+      if (socket) {
+        socket.off('refresh_tables', fetchTables);
+      }
+    };
+  }, [socket]);
 
   const handleGuestSaved = (tableId: string | number, guests: number) => {
     setTables((current) =>

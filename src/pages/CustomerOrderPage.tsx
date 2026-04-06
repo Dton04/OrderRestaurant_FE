@@ -56,7 +56,7 @@ const CustomerOrderPage: React.FC = () => {
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [myOrders, setMyOrders] = useState<any[]>([]);
   const prevMyOrdersRef = useRef<any[]>([]);
-  
+
   const { socket } = useSocket();
 
   useEffect(() => {
@@ -127,11 +127,11 @@ const CustomerOrderPage: React.FC = () => {
     };
 
     fetchHistory();
-    
+
     if (socket) {
       socket.on('item_status_changed', fetchHistory);
     }
-    
+
     return () => {
       if (socket) {
         socket.off('item_status_changed', fetchHistory);
@@ -359,8 +359,8 @@ const CustomerOrderPage: React.FC = () => {
             <button
               onClick={() => setActiveCategoryId('all')}
               className={`shrink-0 rounded-full px-5 py-2 text-sm font-bold transition-all ${activeCategoryId === 'all'
-                  ? 'bg-[#ef5b1b] text-white shadow-md'
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                ? 'bg-[#ef5b1b] text-white shadow-md'
+                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                 }`}
             >
               Tất cả món
@@ -370,8 +370,8 @@ const CustomerOrderPage: React.FC = () => {
                 key={c.id}
                 onClick={() => setActiveCategoryId(c.id)}
                 className={`shrink-0 rounded-full px-5 py-2 text-sm font-bold transition-all ${activeCategoryId === c.id
-                    ? 'bg-[#ef5b1b] text-white shadow-md'
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  ? 'bg-[#ef5b1b] text-white shadow-md'
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                   }`}
               >
                 {c.name}
@@ -469,8 +469,8 @@ const CustomerOrderPage: React.FC = () => {
               className="w-full rounded-xl border border-white bg-white p-3 text-sm font-bold shadow-sm outline-none focus:border-[#ef5b1b] focus:ring-1 focus:ring-[#ef5b1b]"
             >
               <option value="" disabled>-- Chọn Bàn --</option>
-              {tables.map(t => (
-                <option key={t.id} value={t.id}>{t.table_number}</option>
+              {tables.sort((a, b) => a.table_number.localeCompare(b.table_number)).map(t => (
+                <option key={t.id} value={t.id}>{t.table_number} </option>
               ))}
             </select>
           </div>
@@ -559,8 +559,8 @@ const CustomerOrderPage: React.FC = () => {
             onClick={handleCheckout}
             disabled={cart.length === 0 || isSubmitting}
             className={`flex w-full items-center justify-center gap-2 rounded-2xl px-5 py-4 font-extrabold text-white transition-all ${cart.length === 0 || isSubmitting
-                ? 'cursor-not-allowed bg-gray-300'
-                : 'bg-[#ef5b1b] hover:bg-[#d44d15] shadow-lg shadow-orange-200 hover:-translate-y-1'
+              ? 'cursor-not-allowed bg-gray-300'
+              : 'bg-[#ef5b1b] hover:bg-[#d44d15] shadow-lg shadow-orange-200 hover:-translate-y-1'
               }`}
           >
             {isSubmitting ? (
@@ -603,9 +603,8 @@ const CustomerOrderPage: React.FC = () => {
                     <div className="flex justify-between items-center mb-3">
                       <div className="font-extrabold text-gray-900">Đơn #{order.id}</div>
                       <div className="flex items-center gap-2">
-                        <div className={`text-[10px] font-bold px-2 py-0.5 rounded-md uppercase ${
-                          order.status === 'CANCELLED' ? 'bg-red-50 text-red-500' : 'bg-gray-100 text-gray-600'
-                        }`}>
+                        <div className={`text-[10px] font-bold px-2 py-0.5 rounded-md uppercase ${order.status === 'CANCELLED' ? 'bg-red-50 text-red-500' : 'bg-gray-100 text-gray-600'
+                          }`}>
                           {order.status}
                         </div>
                         {order.status === 'PENDING' && (

@@ -25,6 +25,10 @@ export const tableApi = {
     }
     await api.delete(`/tables/${tableId}`);
   },
+  updateStatus: async (id: number | string, status: string): Promise<any> => {
+    const response = await api.patch(`/tables/${id}/status`, { status });
+    return response.data;
+  },
 };
 
 export default tableApi;

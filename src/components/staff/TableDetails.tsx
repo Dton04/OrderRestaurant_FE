@@ -118,6 +118,26 @@ const TableDetails: React.FC<{
     }
   };
 
+  const handleUpdateStatus = async (newStatus: TableStatus) => {
+    if (!table) return;
+    const tableId = Number(table.id);
+    try {
+      setSaving(true);
+      setMessage(null);
+      await tableApi.updateStatus(tableId, newStatus);
+      setMessageType('success');
+      setMessage(`Đã chuyển trạng thái sang ${newStatus}.`);
+      // Local state update if onGuestSaved is used to refresh parent
+      // But parent should listen to socket too.
+    } catch (error: any) {
+      console.error('Failed to update table status:', error);
+      setMessageType('error');
+      setMessage(error.response?.data?.message || 'Không thể cập nhật trạng thái.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
   if (!table) {
     return (
       <div className="rounded-xl bg-white p-6 shadow-md min-h-[350px] flex flex-col items-center justify-center">
@@ -196,10 +216,37 @@ const TableDetails: React.FC<{
             },
           });
         }}
-        className="mt-3 w-full rounded-lg bg-orange-500 py-2 text-sm font-semibold text-white hover:bg-orange-600"
+        className="mt-3 w-full rounded-lg bg-orange-500 py-2 text-sm font-semibold text-white hover:bg-orange-600 mb-3"
       >
         Lên đơn
       </button>
+
+      <div className="border-t border-zinc-100 pt-4 mt-2">
+        <div className="font-bold text-sm mb-3 text-zinc-600">Cập nhật nhanh trạng thái</div>
+        <div className="grid grid-cols-2 gap-2">
+          <button
+            onClick={() => handleUpdateStatus('FREE')}
+            disabled={saving || table.status === 'FREE'}
+            className="py-2.5 rounded-lg border border-zinc-200 text-xs font-bold text-zinc-700 hover:bg-emerald-50 hover:text-emerald-600 hover:border-emerald-200 disabled:opacity-50 transition-all"
+          >
+            Giải phóng (FREE)
+          </button>
+          <button
+            onClick={() => handleUpdateStatus('CLEANING')}
+            disabled={saving || table.status === 'CLEANING'}
+            className="py-2.5 rounded-lg border border-zinc-200 text-xs font-bold text-zinc-700 hover:bg-yellow-50 hover:text-yellow-600 hover:border-yellow-200 disabled:opacity-50 transition-all"
+          >
+            Đang dọn (CLEAN)
+          </button>
+          <button
+            onClick={() => handleUpdateStatus('RESERVED')}
+            disabled={saving || table.status === 'RESERVED'}
+            className="py-2.5 rounded-lg border border-zinc-200 text-xs font-bold text-zinc-700 hover:bg-red-50 hover:text-red-600 hover:border-red-200 disabled:opacity-50 transition-all col-span-2"
+          >
+            Đặt trước (RESERVE)
+          </button>
+        </div>
+      </div>
     </div>
   );
 };
