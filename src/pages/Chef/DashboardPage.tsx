@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Search, Bell, User, CheckCircle2 } from 'lucide-react';
+import { CheckCircle2, Clock, Utensils, ChefHat, AlertCircle, TrendingUp, Package } from 'lucide-react';
 import toast from 'react-hot-toast';
 import orderApi from '../../api/order';
 import type { KitchenQueueItem } from '../../api/order';
@@ -25,8 +25,6 @@ type QueueOrder = {
 const ChefDashboardPage: React.FC = () => {
   const [queueItems, setQueueItems] = useState<KitchenQueueItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('Tất cả');
-  const [stats, setStats] = useState({ waiting: 0, cooking: 0, completed: 0 });
 
   const reloadQueue = useCallback(async () => {
     const items = await orderApi.getKitchenQueue();
@@ -59,12 +57,6 @@ const ChefDashboardPage: React.FC = () => {
       }
     };
   }, [socket, reloadQueue]);
-
-  useEffect(() => {
-    const waiting = queueItems.filter((i) => i.status === 'PENDING').length;
-    const cooking = queueItems.filter((i) => i.status === 'PREPARING').length;
-    setStats((prev) => ({ ...prev, waiting, cooking }));
-  }, [queueItems]);
 
   const orders = useMemo<QueueOrder[]>(() => {
     const grouped = new Map<string, QueueOrder>();
@@ -99,338 +91,223 @@ const ChefDashboardPage: React.FC = () => {
     return Array.from(grouped.values()).sort((a, b) => {
       const ta = new Date(a.created_at).getTime();
       const tb = new Date(b.created_at).getTime();
-      return ta - tb;
+      // Xếp đơn mới nhất lên đầu
+      return tb - ta;
     });
   }, [queueItems]);
 
-  const lineTotalByItemId = useMemo(() => {
-    const map = new Map<string, string | number>();
-    queueItems.forEach((item) => {
-      map.set(String(item.item_id), item.line_total ?? 0);
-    });
-    return map;
-  }, [queueItems]);
-
-  const formatCompactCurrency = (value: string | number | undefined) => {
-    const n =
-      typeof value === 'number'
-        ? value
-        : typeof value === 'string'
-          ? Number(value)
-          : NaN;
-    if (!Number.isFinite(n)) {
-      return 'VNĐ 0';
-    }
-    if (n >= 1000) {
-      return `VNĐ ${Math.round(n / 1000)}k`;
-    }
-    return `VNĐ ${Math.round(n)}`;
-  };
-
-  const filteredOrders = useMemo(() => {
-    if (activeTab === 'Tất cả') {
-      return orders;
-    }
-    return orders;
-  }, [activeTab, orders]);
-
-  // Hàm hỗ trợ tính toán thời gian chờ & render CSS (Dùng cho dữ liệu thực từ API)
+  // Hàm hỗ trợ tính toán thời gian chờ
   const getWaitTimeClass = (createdAt: string | Date | undefined) => {
-    if (!createdAt) return 'text-[#b43516]'; // default
-
-    // Lấy thời gian hiện tại trừ thời gian đặt
+    if (!createdAt) return 'text-[#AC3509]';
     const orderTime = new Date(createdAt).getTime();
     const now = new Date().getTime();
     const diffMinutes = Math.floor((now - orderTime) / 60000);
 
-    // Báo động đỏ nhấp nháy nếu quá 10 phút
     if (diffMinutes > 10) {
       return 'text-red-500 animate-pulse';
     }
-    return 'text-[#b43516]';
+    return 'text-[#AC3509]';
   };
 
   return (
-    <div className="flex flex-col h-full relative pb-20">
-      {/* Topbar */}
-      <header className="flex items-center justify-between px-8 py-6">
-        <div className="flex items-center gap-6">
-          <h2 className="text-xl font-bold text-gray-900">Bảng Điều phối Dịch vụ</h2>
-          <div className="flex items-center gap-3">
-            <span className="bg-[#fcece6] text-[#b43516] px-4 py-1.5 rounded-full text-sm font-semibold flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-[#ef5b1b]"></span>
-              {stats.waiting < 10 ? `0${stats.waiting}` : stats.waiting} Đang chờ
-            </span>
-            <span className="bg-[#fcece6] text-[#b43516] px-4 py-1.5 rounded-full text-sm font-semibold flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-[#ef5b1b]"></span>
-              {stats.cooking < 10 ? `0${stats.cooking}` : stats.cooking} Đang nấu
-            </span>
-          </div>
+    <main className="flex-1 p-8 overflow-y-auto">
+      {/* Header */}
+      <header className="flex items-center justify-between mb-10">
+        <div>
+          <h1 className="text-4xl font-black tracking-tight text-[#191C1D]">
+            Kitchen Pulse
+          </h1>
+          <p className="text-zinc-500 font-medium mt-1">
+            Managing {orders.length} Active Orders • Newest First
+          </p>
         </div>
 
-        <div className="flex items-center gap-6">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-            <input
-              type="text"
-              placeholder="Tìm kiếm đơn hàng..."
-              className="pl-10 pr-4 py-2 bg-[#EAEAEA] border-none rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ef5b1b]/50 text-sm w-64 placeholder:text-gray-500"
-            />
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 bg-white px-4 py-2 rounded-2xl border border-zinc-100 shadow-sm mr-4 text-sm font-semibold">
+            <TrendingUp size={16} className="text-emerald-500" />
+            <span>142 Dishes Prepared Today</span>
           </div>
-          <button className="text-gray-600 hover:text-gray-900 relative">
-            <Bell size={20} />
-            <span className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full border border-white"></span>
+
+          <button className="flex items-center gap-2 bg-[#F1F3F5] text-zinc-700 font-bold px-5 py-3 rounded-2xl text-sm transition-all hover:bg-zinc-200">
+            <Utensils size={18} />
+            All Stations
           </button>
-          <button className="text-gray-600 hover:text-gray-900">
-            <User size={20} />
+          <button className="flex items-center gap-2 bg-[#F1F3F5] text-zinc-700 font-bold px-5 py-3 rounded-2xl text-sm transition-all hover:bg-zinc-200">
+            <Package size={18} />
+            Mark Out-of-Stock
           </button>
         </div>
       </header>
 
-      {/* Main Content */}
-      <div className="px-8 mt-4 flex-1">
-        <div className="flex justify-between items-end mb-8">
-          <div>
-            <h1 className="text-3xl font-extrabold text-gray-900">Đơn Hàng Hiện Tại</h1>
-            <p className="text-gray-500 mt-1">Xử lý các đơn hàng theo thứ tự ưu tiên thời gian.</p>
+      {/* Order Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        {isLoading ? (
+          <div className="col-span-full flex flex-col items-center justify-center py-32 gap-4">
+            <div className="w-12 h-12 border-4 border-[#AC3509] border-t-transparent rounded-full animate-spin"></div>
+            <p className="font-bold text-zinc-400">Syncing with kitchen...</p>
           </div>
-
-          <div className="flex bg-[#F1F3F5] rounded-lg p-1">
-            <button
-              onClick={() => setActiveTab('Tất cả')}
-              className={`px-6 py-2 rounded-md transition-all text-sm ${activeTab === 'Tất cả' ? 'bg-white shadow-sm font-bold text-[#ef5b1b]' : 'font-medium text-gray-600 hover:text-gray-900 bg-transparent'
-                }`}
-            >
-              Tất cả
-            </button>
-            <button
-              onClick={() => setActiveTab('Phòng VIP')}
-              className={`px-6 py-2 rounded-md transition-all text-sm ${activeTab === 'Phòng VIP' ? 'bg-white shadow-sm font-bold text-[#ef5b1b]' : 'font-medium text-gray-600 hover:text-gray-900 bg-transparent'
-                }`}
-            >
-              Phòng VIP
-            </button>
-            <button
-              onClick={() => setActiveTab('Mang về')}
-              className={`px-6 py-2 rounded-md transition-all text-sm ${activeTab === 'Mang về' ? 'bg-white shadow-sm font-bold text-[#ef5b1b]' : 'font-medium text-gray-600 hover:text-gray-900 bg-transparent'
-                }`}
-            >
-              Mang về
-            </button>
+        ) : orders.length === 0 ? (
+          <div className="col-span-full flex flex-col items-center justify-center py-32 text-zinc-400 border-2 border-dashed border-zinc-200 rounded-[32px]">
+            <ChefHat size={64} className="mb-4 opacity-20" />
+            <p className="text-xl font-bold">No active orders in queue.</p>
+            <p className="font-medium opacity-60">Everything is up to date!</p>
           </div>
-        </div>
+        ) : (
+          orders.map((order) => {
+            const waitTimeClass = getWaitTimeClass(order.created_at);
+            const isCooking = order.items.some(i => i.status === 'PREPARING');
+            const minutesElapsed = order.created_at
+              ? Math.floor((new Date().getTime() - new Date(order.created_at).getTime()) / 60000)
+              : 0;
 
-        {/* Order Columns Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-start">
-          {/* Render từ dữ liệu thực */}
-          {isLoading ? (
-            <div className="col-span-3 text-center py-12 text-gray-500 font-bold">
-              Đang tải dữ liệu...
-            </div>
-          ) : filteredOrders.length === 0 ? (
-            <div className="col-span-3 text-center py-12 text-gray-500 font-bold">
-              Không có đơn hàng nào trong mục này.
-            </div>
-          ) : (
-            filteredOrders.map((order) => {
-              // Phân loại thẻ:
-              const waitClass = getWaitTimeClass(order.created_at);
-              const isHighPriority = waitClass.includes('red'); // Nếu quá 10 phút => Ưu tiên cao
-
-              let tagText = "ĐƠN MỚI";
-              let tagColor = "text-gray-500";
-              let borderColor = "border-gray-100";
-              let sideBorder = null;
-              let statusText = "ĐANG CHỜ";
-              let statusBg = "bg-[#ffba08]";
-
-              const hasPreparing = order.items.some((it) => it.status === 'PREPARING');
-              if (hasPreparing) {
-                statusText = 'ĐANG NẤU';
-                statusBg = 'bg-[#b43516]';
-              }
-
-              if (isHighPriority) {
-                tagText = "ƯU TIÊN CAO";
-                tagColor = "text-red-600";
-                borderColor = "border-red-100";
-                sideBorder = <div className="absolute left-0 top-0 bottom-0 w-1 bg-red-600"></div>;
-                statusText = "CHỜ NẤU GẤP";
-                statusBg = "bg-[#ef4444]";
-              }
-
-              const createdDate = new Date(order.created_at);
-              const createdTime = Number.isNaN(createdDate.getTime())
-                ? null
-                : createdDate;
-
-              return (
-                <div key={order.order_key} className={`bg-white rounded-3xl p-6 shadow-sm border ${borderColor} flex flex-col h-full relative overflow-hidden`}>
-                  {sideBorder}
-
-                  <div className="flex justify-between items-start mb-6">
-                    <div>
-                      <p className={`text-xs font-bold uppercase tracking-wider mb-1 ${tagColor}`}>{tagText}</p>
-                      <h3 className="text-2xl font-extrabold text-gray-900">
-                        {order.table_number && order.table_number !== 'N/A'
-                          ? `Bàn #${order.table_number}`
-                          : `#ORDER-${String(order.order_id ?? order.order_key)}`}
-                      </h3>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-sm font-bold text-gray-900">
-                        {createdTime
-                          ? createdTime.toLocaleTimeString([], {
-                            hour: '2-digit',
-                            minute: '2-digit',
-                          })
-                          : '--:--'}
-                      </p>
-                      <p className={`text-sm font-bold flex items-center gap-1 justify-end mt-1 ${waitClass}`}>
-                        {createdTime
-                          ? Math.floor(
-                            (new Date().getTime() - createdTime.getTime()) /
-                            60000,
-                          )
-                          : 0}{' '}
-                        phút
-                      </p>
-                      <div className="mt-2 flex justify-end">
-                        <span className="text-xs font-bold bg-[#EAEAEA] px-2 py-1 rounded-full text-gray-700 whitespace-nowrap">
-                          {formatCompactCurrency(order.order_final_amount)}
-                        </span>
-                      </div>
+            return (
+              <div
+                key={order.order_key}
+                className="bg-white rounded-[32px] border border-zinc-100 shadow-sm overflow-hidden flex flex-col transition-all hover:shadow-xl hover:shadow-[#AC3509]/5 hover:-translate-y-1"
+              >
+                {/* Card Header */}
+                <div className={`h-2 ${isCooking ? 'bg-[#009688]' : 'bg-[#AC3509]'}`}></div>
+                <div className="p-6 pb-4">
+                  <div className="flex justify-between items-center mb-1">
+                    <span className={`text-sm font-black uppercase tracking-widest ${isCooking ? 'text-[#009688]' : 'text-[#AC3509]'}`}>
+                      TABLE {order.table_number || '??'}
+                    </span>
+                    <div className={`flex items-center gap-1.5 font-black text-sm ${waitTimeClass}`}>
+                      {isCooking ? <Utensils size={14} className="animate-bounce" /> : <Clock size={14} />}
+                      {minutesElapsed < 10 ? `0${minutesElapsed}` : minutesElapsed}m
+                      <span className="opacity-50 text-[10px] ml-1 uppercase">{isCooking ? 'Cooking' : 'Waiting'}</span>
                     </div>
                   </div>
-
-                  <div className="space-y-4 mb-8 flex-1">
-                    {/* Render các món ăn trong đơn */}
-                    {order.items.map((item, idx) => (
-                      <div key={idx} className="flex gap-4">
-                        <div className="w-8 h-8 rounded flex items-center justify-center text-sm font-bold shrink-0 bg-[#f4f5f6] text-gray-600">
-                          x{item.quantity || 1}
-                        </div>
-                        <div className="flex-1">
-                          <div className="flex justify-between items-start">
-                            <h4 className="font-bold text-gray-900 text-lg leading-tight w-2/3">
-                              {item.dish_name || 'Tên món'}
-                            </h4>
-                            <span className="text-sm font-bold bg-[#EAEAEA] px-2 py-0.5 rounded-full text-gray-700 whitespace-nowrap">
-                              {formatCompactCurrency(
-                                lineTotalByItemId.get(String(item.item_id)),
-                              )}
-                            </span>
-                          </div>
-                          {/* Nhiệm vụ 11: Hiển thị ghi chú với highlight từ khóa quan trọng */}
-                          {item.notes && (() => {
-                            const noteText = item.notes;
-                            const urgentKeywords = ['Dị ứng', 'dị ứng', 'Không cay', 'không cay', 'Gấp', 'gấp', 'Allergi', 'KHẨN'];
-                            const hasUrgent = urgentKeywords.some(kw => noteText.includes(kw));
-
-                            if (!hasUrgent) {
-                              return (
-                                <p className="text-xs text-orange-600 italic mt-1">
-                                  👉 {noteText}
-                                </p>
-                              );
-                            }
-
-                            // Tách và highlight từ khóa quan trọng
-                            const regex = new RegExp(`(${urgentKeywords.join('|')})`, 'g');
-                            const parts = noteText.split(regex);
-                            return (
-                              <p className="text-xs italic mt-1 flex flex-wrap items-center gap-0.5">
-                                <span></span>
-                                {parts.map((part: string, i: number) =>
-                                  urgentKeywords.includes(part) ? (
-                                    <span key={i} className="text-red-600 font-extrabold not-italic bg-red-50 px-1 rounded">
-                                      {part}
-                                    </span>
-                                  ) : (
-                                    <span key={i} className="text-orange-600">{part}</span>
-                                  )
-                                )}
-                              </p>
-                            );
-                          })()}
-                        </div>
-                      </div>
-                    ))}
-
-                    {/* Fallback nếu API mảng items rỗng */}
-                    {!order.items.length && (
-                      <p className="text-sm text-gray-400 italic">...Đang chờ dữ liệu món ăn...</p>
-                    )}
-                  </div>
-
-                  <div className="space-y-4 mt-auto">
-                    <div>
-                      <span className={`inline-block text-white text-xs font-bold px-3 py-1.5 rounded-md uppercase tracking-wider shadow-sm ${statusBg}`}>
-                        {statusText}
-                      </span>
-                    </div>
-                    <button
-                      onClick={() => {
-                        const cookingItem = order.items.find((it) => it.status === 'PREPARING');
-                        const pendingItem = order.items.find((it) => it.status === 'PENDING');
-                        if (cookingItem) {
-                          void orderApi
-                            .finishCookingItem(cookingItem.item_id)
-                            .then(() => {
-                              toast.success('Món ăn đã nấu xong!');
-                              return reloadQueue();
-                            })
-                            .catch((e) => {
-                              console.error('Finish item error:', e);
-                              toast.error('Có lỗi xảy ra khi cập nhật.');
-                            });
-                          return;
-                        }
-                        if (pendingItem) {
-                          void orderApi
-                            .startCookingItem(pendingItem.item_id)
-                            .then(() => {
-                              toast.success('Bắt đầu nấu món ăn!', { icon: '🔥' });
-                              return reloadQueue();
-                            })
-                            .catch((e) => {
-                              console.error('Start item error:', e);
-                              toast.error('Có lỗi xảy ra khi cập nhật.');
-                            });
-                        }
-                      }}
-                      className="w-full bg-[#ef5b1b] hover:bg-[#d44d15] text-white font-bold py-4 rounded-xl flex justify-center items-center gap-2 transition-colors active:scale-95"
-                    >
-                      <CheckCircle2 size={20} />
-                      {hasPreparing ? 'Xác nhận hoàn tất' : 'Bắt đầu nấu'}
-                    </button>
-                  </div>
+                  <h3 className="text-2xl font-black text-[#191C1D]">Order #{order.order_id || '???'}</h3>
                 </div>
-              );
-            })
-          )}
 
-        </div>
+                {/* Items List */}
+                <div className="px-6 flex-1 space-y-4">
+                  {order.items.map((item, idx) => (
+                    <div key={idx} className="flex items-start gap-4">
+                      <span className="font-black text-zinc-400 mt-0.5">{item.quantity}x</span>
+                      <div className="flex-1">
+                        <div className="flex justify-between items-center">
+                          <span className={`font-bold transition-all ${item.status === 'READY' ? 'text-zinc-300 line-through' : 'text-[#191C1D]'}`}>
+                            {item.dish_name}
+                          </span>
+                          <span className="text-[10px] font-black uppercase bg-zinc-100 px-2 py-1 rounded-md text-zinc-500">
+                            Tag
+                          </span>
+                        </div>
+
+                        {item.notes && (
+                          <div className="mt-3 bg-red-50 p-3 rounded-2xl flex gap-x-2 border border-red-100/50">
+                            <AlertCircle size={14} className="text-red-500 shrink-0 mt-0.5" />
+                            <p className="text-xs font-semibold text-red-700 leading-relaxed italic">
+                              {item.notes}
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                      {item.status === 'READY' && (
+                        <div className="bg-emerald-500 text-white p-1 rounded-full shadow-sm">
+                          <CheckCircle2 size={12} />
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+
+                {/* Footer Action */}
+                <div className="p-6 mt-4">
+                  <button
+                    onClick={() => {
+                      const cookingItem = order.items.find((it) => it.status === 'PREPARING');
+                      const pendingItem = order.items.find((it) => it.status === 'PENDING');
+                      if (cookingItem) {
+                        void orderApi.finishCookingItem(cookingItem.item_id).then(() => {
+                          toast.success('Ready to serve!', { icon: '🧑‍🍳' });
+                          return reloadQueue();
+                        });
+                      } else if (pendingItem) {
+                        void orderApi.startCookingItem(pendingItem.item_id).then(() => {
+                          toast.success('Order started!', { icon: '🔥' });
+                          return reloadQueue();
+                        });
+                      }
+                    }}
+                    className={`w-full py-5 rounded-2xl font-black text-white transition-all active:scale-95 shadow-lg flex items-center justify-center gap-2 ${isCooking
+                      ? 'bg-[#009688] shadow-[#009688]/20 ring-4 ring-[#009688]/10'
+                      : 'bg-[#AC3509] shadow-[#AC3509]/20'
+                      }`}
+                  >
+                    {isCooking ? (
+                      <>
+                        <CheckCircle2 size={20} />
+                        Ready to Serve
+                      </>
+                    ) : (
+                      'Start Cooking'
+                    )}
+                  </button>
+                </div>
+              </div>
+            );
+          })
+        )}
       </div>
 
-      {/* Floating Status Bar Bottom */}
-      <div className="fixed bottom-6 left-[calc(50vw+8rem)] -translate-x-1/2 z-50 bg-white px-8 py-4 rounded-full shadow-[0_8px_30px_rgb(0,0,0,0.12)] flex items-center gap-12 font-bold text-sm transition-all duration-300">
-        <div className="flex items-center gap-2">
-          <span className="w-2.5 h-2.5 rounded-full bg-[#ffba08]"></span>
-          Chờ: {stats.waiting < 10 ? `0${stats.waiting}` : stats.waiting} đơn
+      {/* Footer Sections */}
+      <div className="mt-16 grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* Quick Inventory Update */}
+        <div className="lg:col-span-2 bg-white rounded-[32px] p-8 border border-zinc-100 shadow-sm">
+          <div className="flex justify-between items-center mb-8">
+            <h3 className="text-xl font-black">Quick Inventory Update</h3>
+            <span className="text-xs font-bold text-zinc-400 uppercase tracking-widest">Available Items</span>
+          </div>
+
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {[
+              { name: 'Mixed Salad', img: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?q=80&w=200&auto=format&fit=crop' },
+              { name: 'Ribeye Steak', img: 'https://images.unsplash.com/photo-1600891964092-4316c288032e?q=80&w=200&auto=format&fit=crop' },
+              { name: 'Seared Salmon', img: 'https://images.unsplash.com/photo-1519708227418-c8fd9a32b7a2?q=80&w=200&auto=format&fit=crop' },
+              { name: 'Mushroom Soup', img: 'https://images.unsplash.com/photo-1547592166-23ac45744acd?q=80&w=200&auto=format&fit=crop', stock: 'restock' }
+            ].map((food, i) => (
+              <div key={i} className="bg-[#F8F9FA] rounded-2xl p-4 flex flex-col items-center gap-3 transition-all hover:shadow-md cursor-pointer border border-transparent hover:border-[#AC3509]/10">
+                <img src={food.img} alt={food.name} className="w-16 h-16 rounded-full object-cover shadow-sm bg-white p-0.5" />
+                <div className="text-center">
+                  <p className="text-xs font-black">{food.name}</p>
+                  {food.stock === 'restock' && <span className="text-[10px] font-bold text-[#AC3509] uppercase">Back in stock</span>}
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
-        <div className="w-px h-4 bg-gray-200"></div>
-        <div className="flex items-center gap-2 transition-all">
-          <span className="w-2.5 h-2.5 rounded-full bg-[#b43516]"></span>
-          Nấu: {stats.cooking < 10 ? `0${stats.cooking}` : stats.cooking} đơn
-        </div>
-        <div className="w-px h-4 bg-gray-200"></div>
-        <div className="flex items-center gap-2 transition-all relative">
-          <span className="w-2.5 h-2.5 rounded-full bg-green-500"></span>
-          Xong: <span className="inline-block min-w-5 text-center">{stats.completed < 10 ? `0${stats.completed}` : stats.completed}</span> đơn
+
+        {/* Shift Insights */}
+        <div className="bg-[#191C1D] rounded-[32px] p-8 text-white flex flex-col shadow-xl">
+          <h3 className="text-xl font-black mb-1">Shift Insights</h3>
+          <p className="text-xs text-zinc-500 font-bold mb-8">Real-time performance metrics</p>
+
+          <div className="mb-10">
+            <div className="flex items-end gap-1 mb-2">
+              <span className="text-5xl font-black">24m</span>
+              <span className="text-sm font-bold text-red-400 flex items-center gap-0.5 mb-2">
+                <TrendingUp size={14} className="rotate-180" />
+                12%
+              </span>
+            </div>
+            <p className="text-[10px] font-black uppercase text-zinc-500 tracking-[.2em]">Avg. Completion Time</p>
+          </div>
+
+          <div className="mt-auto flex items-end justify-between gap-1 h-32">
+            {[40, 70, 50, 90, 60, 45, 80].map((h, i) => (
+              <div
+                key={i}
+                style={{ height: `${h}%` }}
+                className={`flex-1 rounded-sm transition-all ${i === 3 ? 'bg-[#AC3509]' : 'bg-zinc-800'}`}
+              ></div>
+            ))}
+          </div>
         </div>
       </div>
-    </div>
+    </main>
   );
 };
 

@@ -37,6 +37,26 @@ export const usersApi = {
     );
   },
 
+  createUser: async (data: any): Promise<User> => {
+    const response = await api.post<User>('/users/staff', data, {
+      headers: getAuthorizationHeader(),
+    });
+    return response.data;
+  },
+
+  updateUserRole: async (id: string, roleId: string | number): Promise<void> => {
+    await api.put(`/users/${id}/role`, { role_id: roleId }, {
+      headers: getAuthorizationHeader(),
+    });
+  },
+
+  getRoles: async (): Promise<any[]> => {
+    const response = await api.get<any[]>('/users/roles', {
+      headers: getAuthorizationHeader(),
+    });
+    return response.data;
+  },
+
   getProfile: async (): Promise<User> => {
     const response = await api.get<User>('/auth/me', {
       headers: getAuthorizationHeader(),

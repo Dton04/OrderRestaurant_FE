@@ -291,22 +291,6 @@ const BillingPage: React.FC = () => {
     }
   }, [loadCheckoutBill]);
 
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const vnpayStatus = params.get('vnpay');
-    if (vnpayStatus === 'success') {
-      setPaymentCompleted(true);
-      setFeedbackType('success');
-      setFeedback('Thanh toán VNPay thành công! Đã tự động hoàn tất đơn hàng.');
-      // Cleanup search params
-      window.history.replaceState({}, '', window.location.pathname);
-    } else if (vnpayStatus === 'failed') {
-      setFeedbackType('error');
-      setFeedback(`Thanh toán VNPay thất bại: ${params.get('message') || 'Giao dịch bị hủy hoặc lỗi.'}`);
-      window.history.replaceState({}, '', window.location.pathname);
-    }
-  }, []);
-
   const loadRevenueStats = useCallback(async () => {
     try {
       setStatsLoading(true);
@@ -393,8 +377,33 @@ const BillingPage: React.FC = () => {
     loadRevenueStats();
   }, [loadRevenueStats]);
 
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const vnpayStatus = params.get('vnpay');
+    if (vnpayStatus === 'success') {
+      setPaymentCompleted(true);
+      setFeedbackType('success');
+      setFeedback('Thanh toán VNPay thành công! Đã hoàn tất đơn hàng và giải phóng bàn.');
+
+      // Cleanup order & table from localStorage as the flow is finished
+      localStorage.removeItem(ORDER_ID_STORAGE_KEY);
+      localStorage.removeItem(ACTIVE_ORDER_TABLE_KEY);
+      localStorage.removeItem(BILLING_DRAFT_KEY);
+
+      // Refresh stats to include this new payment
+      loadRevenueStats();
+
+      // Cleanup search params
+      window.history.replaceState({}, '', window.location.pathname);
+    } else if (vnpayStatus === 'failed') {
+      setFeedbackType('error');
+      setFeedback(`Thanh toán VNPay thất bại: ${params.get('message') || 'Giao dịch bị hủy hoặc lỗi.'}`);
+      window.history.replaceState({}, '', window.location.pathname);
+    }
+  }, [loadRevenueStats]);
+
   const isVnpay = selectedMethod === 'VNPAY';
-  const effectiveStatus: PaymentStatus = isVnpay ? 'PENDING' : 'SUCCESS';
+  const effectiveStatus: PaymentStatus = (isVnpay && !paymentCompleted) ? 'PENDING' : 'SUCCESS';
   const updatedAtLabel = new Intl.DateTimeFormat('vi-VN', {
     hour: '2-digit',
     minute: '2-digit',
@@ -656,28 +665,39 @@ const BillingPage: React.FC = () => {
                 ) : null}
 
                 <div className="mt-8 flex gap-4">
-                  <button
-                    onClick={() => navigate('/staff/active-orders')}
-                    className="flex-1 rounded-xl bg-zinc-200 py-4 font-bold text-[#191c1d] transition-all active:scale-95"
-                  >
-                    Quay lại đơn hàng
-                  </button>
-                  <button
-                    onClick={handleConfirmPayment}
-                    disabled={submitting || paymentCompleted || draft.items.length === 0 || !draft.orderId}
-                    className="flex-[2] rounded-xl bg-gradient-to-br from-[#ac3509] to-[#ff7043] py-4 font-bold text-white shadow-lg shadow-[#ac3509]/20 transition-all active:scale-95 disabled:cursor-not-allowed disabled:opacity-60"
-                  >
-                    <span className="flex items-center justify-center gap-2">
-                      <CheckCircle2 size={18} />
-                      {submitting
-                        ? 'Đang xử lý...'
-                        : isVnpay
-                          ? 'Tạo payment VNPay'
-                          : paymentCompleted
-                            ? 'Đã thanh toán'
-                            : 'Xác nhận thanh toán'}
-                    </span>
-                  </button>
+                  {paymentCompleted ? (
+                    <button
+                      onClick={() => navigate('/staff/table-map')}
+                      className="flex-1 rounded-xl bg-[#ac3509] py-4 font-bold text-white shadow-lg shadow-[#ac3509]/20 transition-all active:scale-95"
+                    >
+                      Tiếp tục đơn mới
+                    </button>
+                  ) : (
+                    <>
+                      <button
+                        onClick={() => navigate('/staff/active-orders')}
+                        className="flex-1 rounded-xl bg-zinc-200 py-4 font-bold text-[#191c1d] transition-all active:scale-95"
+                      >
+                        Quay lại đơn hàng
+                      </button>
+                      <button
+                        onClick={handleConfirmPayment}
+                        disabled={submitting || paymentCompleted || draft.items.length === 0 || !draft.orderId}
+                        className="flex-[2] rounded-xl bg-gradient-to-br from-[#ac3509] to-[#ff7043] py-4 font-bold text-white shadow-lg shadow-[#ac3509]/20 transition-all active:scale-95 disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        <span className="flex items-center justify-center gap-2">
+                          <CheckCircle2 size={18} />
+                          {submitting
+                            ? 'Đang xử lý...'
+                            : isVnpay
+                              ? 'Tạo payment VNPay'
+                              : paymentCompleted
+                                ? 'Đã thanh toán'
+                                : 'Xác nhận thanh toán'}
+                        </span>
+                      </button>
+                    </>
+                  )}
                 </div>
               </div>
             </section>
