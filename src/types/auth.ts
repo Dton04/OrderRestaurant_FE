@@ -4,7 +4,8 @@ export interface User {
   full_name: string;
   phone: string;
   role: string;
-  role_id?: number;
+  role_id?: string | number;
+  deleted_at?: string | null;
 }
 
 export interface AuthResponse {
