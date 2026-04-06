@@ -2,6 +2,7 @@ export interface CreateOrderItemDto {
   dish_id: bigint | number | string;
   quantity: number;
   price_at_order: number;
+  notes?: string | null;
 }
 
 export interface CreateOrderDto {
@@ -12,6 +13,7 @@ export interface CreateOrderDto {
   discount_amount?: number;
   final_amount: number;
   status: string;
+  notes?: string | null;
   items: CreateOrderItemDto[];
 }
 

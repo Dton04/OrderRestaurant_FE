@@ -59,6 +59,23 @@ export const orderApi = {
   finishCookingItem: async (itemId: bigint | number | string): Promise<void> => {
     await api.patch(`/orders/items/${itemId}/finish`);
   },
+  serveCookingItem: async (itemId: bigint | number | string): Promise<void> => {
+    await api.patch(`/orders/items/${itemId}/serve`);
+  },
+  getStaffKitchenPulse: async (): Promise<KitchenQueueItem[]> => {
+    const response = await api.get<ApiResponse<KitchenQueueItem[]>>(
+      '/orders/staff/kitchen-pulse',
+    );
+    return response.data.data;
+  },
+  getCustomerMyOrders: async (status?: string): Promise<Order[]> => {
+    const params = status ? { status } : {};
+    const response = await api.get<ApiResponse<Order[]>>(
+      '/orders/customer/my-orders',
+      { params },
+    );
+    return response.data.data;
+  },
 };
 
 export default orderApi;
