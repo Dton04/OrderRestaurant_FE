@@ -122,7 +122,7 @@ const ActiveOrdersPage: React.FC = () => {
       if (!selectedTable?.id || selectedTable.status !== 'OCCUPIED') {
         return;
       }
-      
+
       // If we already have an orderId for this session/table, maybe we don't need to fetch
       // But fetching ensures we have the latest from DB if another staff updated it
       try {
@@ -131,7 +131,7 @@ const ActiveOrdersPage: React.FC = () => {
           const order = response.data;
           setOrderId(String(order.id));
           localStorage.setItem(ORDER_ID_STORAGE_KEY, String(order.id));
-          
+
           // Map backend order_items to frontend OrderItem (BillingDraftItem)
           const mappedItems: OrderItem[] = order.order_items.map((oi: any, index: number) => ({
             id: Number(oi.dish.id),
@@ -141,7 +141,7 @@ const ActiveOrdersPage: React.FC = () => {
             note: oi.notes || '',
             accent: orderAccentPalette[index % orderAccentPalette.length],
           }));
-          
+
           setOrderItems(mappedItems);
         }
       } catch (err) {
@@ -383,11 +383,10 @@ const ActiveOrdersPage: React.FC = () => {
                     <button
                       key={category.id}
                       onClick={() => setActiveCategoryId(category.id)}
-                      className={`flex-1 rounded-lg px-5 py-2 text-sm font-bold transition-all xl:flex-none ${
-                        active
+                      className={`flex-1 rounded-lg px-5 py-2 text-sm font-bold transition-all xl:flex-none ${active
                           ? 'bg-white text-[#ac3509] shadow-sm'
                           : 'text-[#59413a] hover:text-[#191c1d]'
-                      }`}
+                        }`}
                     >
                       {categoryTabLabels[index] ?? category.name}
                     </button>
@@ -559,11 +558,10 @@ const ActiveOrdersPage: React.FC = () => {
 
             {feedback ? (
               <div
-                className={`rounded-2xl px-4 py-3 text-sm font-medium ${
-                  feedbackType === 'success'
+                className={`rounded-2xl px-4 py-3 text-sm font-medium ${feedbackType === 'success'
                     ? 'bg-emerald-50 text-emerald-700'
                     : 'bg-red-50 text-red-700'
-                }`}
+                  }`}
               >
                 {feedback}
               </div>

@@ -6,7 +6,7 @@ const ChefLayout: React.FC = () => {
   return (
     <div className="min-h-screen bg-[#F8F9FA] flex font-sans">
       <ChefSidebar />
-      <div className="flex-1 ml-64 flex flex-col h-screen overflow-hidden">
+      <div className="flex-1 ml-20 flex flex-col h-screen overflow-hidden">
         <main className="flex-1 overflow-x-hidden overflow-y-auto">
           <Outlet />
         </main>
