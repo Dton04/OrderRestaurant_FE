@@ -1,4 +1,5 @@
 import React from 'react';
+import { Toaster } from 'react-hot-toast';
 import {
   BrowserRouter as Router,
   Routes,
@@ -9,6 +10,7 @@ import {
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import HomePage from './pages/HomePage';
+import CustomerOrderPage from './pages/CustomerOrderPage';
 import AdminLayout from './components/Admin/Layout';
 import AdminUsersPage from './pages/AdminUsersPage';
 import DashboardPage from './pages/Admin/DashboardPage';
@@ -18,6 +20,7 @@ import TableManagementPage from './pages/Admin/TableManagementPage';
 import TableMapPage from './pages/Staff/TableMapPage';
 import ActiveOrdersPage from './pages/Staff/ActiveOrdersPage';
 import BillingPage from './pages/Staff/BillingPage';
+import KitchenPulsePage from './pages/Staff/KitchenPulsePage';
 import ProfilePage from './pages/ProfilePage';
 import ChefLayout from './components/Chef/Layout';
 import ChefDashboardPage from './pages/Chef/DashboardPage';
@@ -144,6 +147,7 @@ function App() {
             </RequireAuth>
           }
         />
+        <Route path="/order" element={<CustomerOrderPage />} />
         <Route
           path="/admin"
           element={
@@ -192,6 +196,14 @@ function App() {
           }
         />
         <Route
+          path="/staff/kds"
+          element={
+            <RequireStaff>
+              <KitchenPulsePage />
+            </RequireStaff>
+          }
+        />
+        <Route
           path="/staff/billing"
           element={
             <RequireStaff>
@@ -209,6 +221,7 @@ function App() {
         />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
+      <Toaster position="top-right" />
     </Router>
   );
 }
