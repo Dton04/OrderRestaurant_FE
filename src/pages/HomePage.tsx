@@ -110,6 +110,9 @@ const HomePage: React.FC = () => {
               <a href="#pricing" className="transition-colors hover:text-[#ef5b1b]">
                 Giá
               </a>
+              <Link to="/order" className="transition-colors text-[#ef5b1b] hover:text-[#d44d15]">
+                Đặt món
+              </Link>
               <a href="#about" className="transition-colors hover:text-[#ef5b1b]">
                 Giới thiệu
               </a>
@@ -177,18 +180,18 @@ const HomePage: React.FC = () => {
                 <div className="mt-7 flex flex-col gap-3 sm:flex-row">
                   <button
                     type="button"
-                    onClick={() => navigate(isAuthed ? '/staff/active-orders' : '/login')}
+                    onClick={() => navigate('/order')}
                     className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#ef5b1b] px-6 py-3 text-sm font-extrabold text-white shadow-md shadow-orange-200 transition-colors hover:bg-[#d44d15]"
                   >
-                    Khám phá ngay
+                    Đặt món ngay
                     <ArrowRight size={18} />
                   </button>
                   <button
                     type="button"
-                    onClick={() => navigate('/admin/menu')}
+                    onClick={() => navigate(isAuthed ? '/staff/active-orders' : '/login')}
                     className="inline-flex items-center justify-center rounded-xl border border-gray-200 bg-white px-6 py-3 text-sm font-extrabold text-gray-900 transition-colors hover:bg-gray-50"
                   >
-                    Dùng thử miễn phí
+                    Dành cho quản lý
                   </button>
                 </div>
               </div>

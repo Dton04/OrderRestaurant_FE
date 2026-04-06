@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Search, Bell, User, CheckCircle2 } from 'lucide-react';
+import toast from 'react-hot-toast';
 import orderApi from '../../api/order';
 import type { KitchenQueueItem } from '../../api/order';
 
@@ -259,7 +260,7 @@ const ChefDashboardPage: React.FC = () => {
               return (
                 <div key={order.order_key} className={`bg-white rounded-3xl p-6 shadow-sm border ${borderColor} flex flex-col h-full relative overflow-hidden`}>
                   {sideBorder}
-                  
+
                   <div className="flex justify-between items-start mb-6">
                     <div>
                       <p className={`text-xs font-bold uppercase tracking-wider mb-1 ${tagColor}`}>{tagText}</p>
@@ -273,17 +274,17 @@ const ChefDashboardPage: React.FC = () => {
                       <p className="text-sm font-bold text-gray-900">
                         {createdTime
                           ? createdTime.toLocaleTimeString([], {
-                              hour: '2-digit',
-                              minute: '2-digit',
-                            })
+                            hour: '2-digit',
+                            minute: '2-digit',
+                          })
                           : '--:--'}
                       </p>
                       <p className={`text-sm font-bold flex items-center gap-1 justify-end mt-1 ${waitClass}`}>
                         {createdTime
                           ? Math.floor(
-                              (new Date().getTime() - createdTime.getTime()) /
-                                60000,
-                            )
+                            (new Date().getTime() - createdTime.getTime()) /
+                            60000,
+                          )
                           : 0}{' '}
                         phút
                       </p>
@@ -332,7 +333,7 @@ const ChefDashboardPage: React.FC = () => {
                             const parts = noteText.split(regex);
                             return (
                               <p className="text-xs italic mt-1 flex flex-wrap items-center gap-0.5">
-                                <span>⚠️</span>
+                                <span></span>
                                 {parts.map((part: string, i: number) =>
                                   urgentKeywords.includes(part) ? (
                                     <span key={i} className="text-red-600 font-extrabold not-italic bg-red-50 px-1 rounded">
@@ -348,7 +349,7 @@ const ChefDashboardPage: React.FC = () => {
                         </div>
                       </div>
                     ))}
-                    
+
                     {/* Fallback nếu API mảng items rỗng */}
                     {!order.items.length && (
                       <p className="text-sm text-gray-400 italic">...Đang chờ dữ liệu món ăn...</p>
@@ -361,22 +362,34 @@ const ChefDashboardPage: React.FC = () => {
                         {statusText}
                       </span>
                     </div>
-                    <button 
+                    <button
                       onClick={() => {
                         const cookingItem = order.items.find((it) => it.status === 'PREPARING');
                         const pendingItem = order.items.find((it) => it.status === 'PENDING');
                         if (cookingItem) {
                           void orderApi
                             .finishCookingItem(cookingItem.item_id)
-                            .then(reloadQueue)
-                            .catch((e) => console.error('Finish item error:', e));
+                            .then(() => {
+                              toast.success('Món ăn đã nấu xong!');
+                              return reloadQueue();
+                            })
+                            .catch((e) => {
+                              console.error('Finish item error:', e);
+                              toast.error('Có lỗi xảy ra khi cập nhật.');
+                            });
                           return;
                         }
                         if (pendingItem) {
                           void orderApi
                             .startCookingItem(pendingItem.item_id)
-                            .then(reloadQueue)
-                            .catch((e) => console.error('Start item error:', e));
+                            .then(() => {
+                              toast.success('Bắt đầu nấu món ăn!', { icon: '🔥' });
+                              return reloadQueue();
+                            })
+                            .catch((e) => {
+                              console.error('Start item error:', e);
+                              toast.error('Có lỗi xảy ra khi cập nhật.');
+                            });
                         }
                       }}
                       className="w-full bg-[#ef5b1b] hover:bg-[#d44d15] text-white font-bold py-4 rounded-xl flex justify-center items-center gap-2 transition-colors active:scale-95"
