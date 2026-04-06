@@ -11,6 +11,7 @@ import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import HomePage from './pages/HomePage';
 import CustomerOrderPage from './pages/CustomerOrderPage';
+import { SocketProvider } from './context/SocketContext';
 import AdminLayout from './components/Admin/Layout';
 import AdminUsersPage from './pages/AdminUsersPage';
 import DashboardPage from './pages/Admin/DashboardPage';
@@ -135,94 +136,96 @@ function RequireAdmin({ children }: { children: React.ReactNode }) {
 
 function App() {
   return (
-    <Router>
-      <Routes>
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/register" element={<RegisterPage />} />
-        <Route
-          path="/"
-          element={
-            <RequireAuth>
-              <HomePage />
-            </RequireAuth>
-          }
-        />
-        <Route path="/order" element={<CustomerOrderPage />} />
-        <Route
-          path="/admin"
-          element={
-            <RequireAdmin>
-              <AdminLayout />
-            </RequireAdmin>
-          }
-        >
-          <Route index element={<Navigate to="dashboard" replace />} />
-          <Route path="dashboard" element={<DashboardPage />} />
-          <Route path="users" element={<AdminUsersPage />} />
-          <Route path="menu" element={<MenuManagementPage />} />
-          <Route path="categories" element={<CategoryManagementPage />} />
-          <Route path="tables" element={<TableManagementPage />} />
-          <Route path="loyalty" element={<LoyaltyManagementPage />} />
-          <Route path="reports" element={<DashboardPage />} />
-          <Route path="settings" element={<ProfilePage />} />
-        </Route>
-        <Route
-          path="/chef"
-          element={
-            <RequireChef>
-              <ChefLayout />
-            </RequireChef>
-          }
-        >
-          <Route index element={<Navigate to="dashboard" replace />} />
-          <Route path="dashboard" element={<ChefDashboardPage />} />
-          <Route path="history" element={<ChefHistoryPage />} />
-          <Route path="settings" element={<ProfilePage />} />
-        </Route>
-        <Route
-          path="/staff/table-map"
-          element={
-            <RequireStaff>
-              <TableMapPage />
-            </RequireStaff>
-          }
-        />
-        <Route
-          path="/staff/active-orders"
-          element={
-            <RequireStaff>
-              <ActiveOrdersPage />
-            </RequireStaff>
-          }
-        />
-        <Route
-          path="/staff/kds"
-          element={
-            <RequireStaff>
-              <KitchenPulsePage />
-            </RequireStaff>
-          }
-        />
-        <Route
-          path="/staff/billing"
-          element={
-            <RequireStaff>
-              <BillingPage />
-            </RequireStaff>
-          }
-        />
-        <Route
-          path="/staff/settings"
-          element={
-            <RequireStaff>
-              <ProfilePage />
-            </RequireStaff>
-          }
-        />
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
-      <Toaster position="top-right" />
-    </Router>
+    <SocketProvider>
+      <Router>
+        <Routes>
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/register" element={<RegisterPage />} />
+          <Route
+            path="/"
+            element={
+              <RequireAuth>
+                <HomePage />
+              </RequireAuth>
+            }
+          />
+          <Route path="/order" element={<CustomerOrderPage />} />
+          <Route
+            path="/admin"
+            element={
+              <RequireAdmin>
+                <AdminLayout />
+              </RequireAdmin>
+            }
+          >
+            <Route index element={<Navigate to="dashboard" replace />} />
+            <Route path="dashboard" element={<DashboardPage />} />
+            <Route path="users" element={<AdminUsersPage />} />
+            <Route path="menu" element={<MenuManagementPage />} />
+            <Route path="categories" element={<CategoryManagementPage />} />
+            <Route path="tables" element={<TableManagementPage />} />
+            <Route path="loyalty" element={<LoyaltyManagementPage />} />
+            <Route path="reports" element={<DashboardPage />} />
+            <Route path="settings" element={<ProfilePage />} />
+          </Route>
+          <Route
+            path="/chef"
+            element={
+              <RequireChef>
+                <ChefLayout />
+              </RequireChef>
+            }
+          >
+            <Route index element={<Navigate to="dashboard" replace />} />
+            <Route path="dashboard" element={<ChefDashboardPage />} />
+            <Route path="history" element={<ChefHistoryPage />} />
+            <Route path="settings" element={<ProfilePage />} />
+          </Route>
+          <Route
+            path="/staff/table-map"
+            element={
+              <RequireStaff>
+                <TableMapPage />
+              </RequireStaff>
+            }
+          />
+          <Route
+            path="/staff/active-orders"
+            element={
+              <RequireStaff>
+                <ActiveOrdersPage />
+              </RequireStaff>
+            }
+          />
+          <Route
+            path="/staff/kds"
+            element={
+              <RequireStaff>
+                <KitchenPulsePage />
+              </RequireStaff>
+            }
+          />
+          <Route
+            path="/staff/billing"
+            element={
+              <RequireStaff>
+                <BillingPage />
+              </RequireStaff>
+            }
+          />
+          <Route
+            path="/staff/settings"
+            element={
+              <RequireStaff>
+                <ProfilePage />
+              </RequireStaff>
+            }
+          />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+        <Toaster position="top-right" />
+      </Router>
+    </SocketProvider>
   );
 }
 

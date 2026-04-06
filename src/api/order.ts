@@ -76,6 +76,20 @@ export const orderApi = {
     );
     return response.data.data;
   },
+  cancel: async (id: bigint | number | string): Promise<void> => {
+    await api.patch(`/orders/${id}/cancel`);
+  },
+  cancelItem: async (orderId: bigint | number | string, itemId: bigint | number | string): Promise<void> => {
+    await api.patch(`/orders/${orderId}/items/${itemId}/cancel`);
+  },
+  getCheckoutBill: async (id: bigint | number | string): Promise<any> => {
+    const response = await api.get<ApiResponse<any>>(`/orders/${id}/checkout-bill`);
+    return response.data;
+  },
+  findActiveOrderByTableId: async (tableId: bigint | number | string): Promise<any> => {
+    const response = await api.get<ApiResponse<any>>(`/orders/table/${tableId}/active`);
+    return response.data;
+  },
 };
 
 export default orderApi;

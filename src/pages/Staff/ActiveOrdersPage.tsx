@@ -116,6 +116,42 @@ const ActiveOrdersPage: React.FC = () => {
     }
   }, [location.state]);
 
+  // Load existing order if table is OCCUPIED
+  useEffect(() => {
+    const loadExistingOrder = async () => {
+      if (!selectedTable?.id || selectedTable.status !== 'OCCUPIED') {
+        return;
+      }
+      
+      // If we already have an orderId for this session/table, maybe we don't need to fetch
+      // But fetching ensures we have the latest from DB if another staff updated it
+      try {
+        const response = await orderApi.findActiveOrderByTableId(selectedTable.id);
+        if (response.data) {
+          const order = response.data;
+          setOrderId(String(order.id));
+          localStorage.setItem(ORDER_ID_STORAGE_KEY, String(order.id));
+          
+          // Map backend order_items to frontend OrderItem (BillingDraftItem)
+          const mappedItems: OrderItem[] = order.order_items.map((oi: any, index: number) => ({
+            id: Number(oi.dish.id),
+            name: oi.dish.name,
+            quantity: oi.quantity,
+            unitPrice: Number(oi.price_at_order),
+            note: oi.notes || '',
+            accent: orderAccentPalette[index % orderAccentPalette.length],
+          }));
+          
+          setOrderItems(mappedItems);
+        }
+      } catch (err) {
+        console.error('Failed to load existing order items:', err);
+      }
+    };
+
+    loadExistingOrder();
+  }, [selectedTable]);
+
   useEffect(() => {
     const fetchMenu = async () => {
       try {

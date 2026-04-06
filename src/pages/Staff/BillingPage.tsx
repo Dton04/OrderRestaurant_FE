@@ -1,4 +1,4 @@
-﻿import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   Banknote,
   QrCode,
@@ -46,6 +46,7 @@ type RevenueStats = {
 
 const BILLING_DRAFT_KEY = 'staff.billingDraft';
 const ACTIVE_ORDER_TABLE_KEY = 'staff.activeOrderTable';
+const ORDER_ID_STORAGE_KEY = 'staff.currentOrderId';
 
 type SelectedTableInfo = {
   id?: string | number;
@@ -214,35 +215,95 @@ const BillingPage: React.FC = () => {
   const [stats, setStats] = useState<RevenueStats>(emptyStats);
   const [statsLoading, setStatsLoading] = useState(true);
   const [statsError, setStatsError] = useState<string | null>(null);
+  const [selectedTable, setSelectedTable] = useState<SelectedTableInfo | null>(null);
 
-  const draft = useMemo<BillingDraft>(() => {
-    const raw = localStorage.getItem(BILLING_DRAFT_KEY);
-    if (!raw) {
-      return emptyDraft;
-    }
+  const [draft, setDraft] = useState<BillingDraft>(emptyDraft);
+  const [billLoading, setBillLoading] = useState(false);
+  const [billError, setBillError] = useState<string | null>(null);
 
+  const loadCheckoutBill = useCallback(async (orderIdValue: string | number) => {
     try {
-      const parsed = JSON.parse(raw) as BillingDraft;
-      return {
-        ...emptyDraft,
-        ...parsed,
-        items: Array.isArray(parsed.items) ? parsed.items : [],
-      };
-    } catch {
-      return emptyDraft;
+      setBillLoading(true);
+      setBillError(null);
+      const billData = await orderApi.getCheckoutBill(orderIdValue);
+      const data = billData.data;
+
+      const subtotal = toNumber(data.total_amount);
+      const vat = Math.round(subtotal * 0.08);
+
+      setDraft({
+        code: `#ORDER-${data.order_id}`,
+        orderId: data.order_id,
+        items: data.items.map((item: any) => ({
+          id: item.id,
+          name: item.name,
+          quantity: item.quantity,
+          unitPrice: item.unitPrice,
+          note: item.note,
+        })),
+        totalAmount: subtotal,
+        discountAmount: toNumber(data.discount),
+        finalAmount: toNumber(data.final_amount) + vat, // Frontend UI expects total with VAT? Actually UI calculate VAT separately?
+        vat: vat,
+        tableNumber: data.table_number,
+      });
+
+      // Update final amount including VAT if needed. 
+      // Current UI: finalAmount = totalAmount - discountAmount + vat
+      setDraft(prev => ({
+        ...prev,
+        finalAmount: prev.totalAmount - prev.discountAmount + prev.vat
+      }));
+
+    } catch (error) {
+      console.error('Failed to load checkout bill:', error);
+      setBillError('Không thể tải thông tin hóa đơn từ backend.');
+    } finally {
+      setBillLoading(false);
     }
   }, []);
 
-  const selectedTable = useMemo<SelectedTableInfo | null>(() => {
-    const raw = localStorage.getItem(ACTIVE_ORDER_TABLE_KEY);
-    if (!raw) {
-      return null;
+  useEffect(() => {
+    const storedOrderId = localStorage.getItem(ORDER_ID_STORAGE_KEY);
+    if (storedOrderId) {
+      loadCheckoutBill(storedOrderId);
+    } else {
+      // Fallback to draft from localStorage if no orderId
+      const raw = localStorage.getItem(BILLING_DRAFT_KEY);
+      if (raw) {
+        try {
+          const parsed = JSON.parse(raw) as BillingDraft;
+          setDraft(parsed);
+        } catch (e) {
+          setDraft(emptyDraft);
+        }
+      }
     }
 
-    try {
-      return JSON.parse(raw) as SelectedTableInfo;
-    } catch {
-      return null;
+    // Also load selected table info from localStorage
+    const rawTable = localStorage.getItem(ACTIVE_ORDER_TABLE_KEY);
+    if (rawTable) {
+      try {
+        setSelectedTable(JSON.parse(rawTable) as SelectedTableInfo);
+      } catch (e) {
+        setSelectedTable(null);
+      }
+    }
+  }, [loadCheckoutBill]);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const vnpayStatus = params.get('vnpay');
+    if (vnpayStatus === 'success') {
+      setPaymentCompleted(true);
+      setFeedbackType('success');
+      setFeedback('Thanh toán VNPay thành công! Đã tự động hoàn tất đơn hàng.');
+      // Cleanup search params
+      window.history.replaceState({}, '', window.location.pathname);
+    } else if (vnpayStatus === 'failed') {
+      setFeedbackType('error');
+      setFeedback(`Thanh toán VNPay thất bại: ${params.get('message') || 'Giao dịch bị hủy hoặc lỗi.'}`);
+      window.history.replaceState({}, '', window.location.pathname);
     }
   }, []);
 
@@ -341,31 +402,24 @@ const BillingPage: React.FC = () => {
   const donutBackground = buildDonutBackground(stats.breakdown);
 
   const updateOrderPaidStatus = async (orderIdValue: string | number) => {
-    const statusCandidates = ['PAID', 'COMPLETED', 'SUCCESS', 'IN_PROGRESS'];
-    let lastError: unknown = null;
-
-    for (const status of statusCandidates) {
-      try {
-        await orderApi.update(orderIdValue, {
-          status,
-          total_amount: draft.totalAmount,
-          discount_amount: draft.discountAmount,
-          final_amount: draft.finalAmount,
-        });
-        return;
-      } catch (error) {
-        lastError = error;
-      }
+    try {
+      await orderApi.update(orderIdValue, {
+        status: 'COMPLETED',
+        total_amount: draft.totalAmount,
+        discount_amount: draft.discountAmount,
+        final_amount: draft.finalAmount,
+      });
+    } catch (error) {
+      console.error('Failed to update order status to COMPLETED:', error);
+      throw error;
     }
-
-    throw lastError;
   };
 
   const handleConfirmPayment = async () => {
     if (!draft.orderId) {
       setFeedbackType('error');
       setFeedback(
-        'Chưa có order_id từ backend. Cần tạo order trước rồi mới gọi POST /payments.',
+        'Chưa có order_id để thanh toán.',
       );
       return;
     }
@@ -374,6 +428,13 @@ const BillingPage: React.FC = () => {
       setSubmitting(true);
       setFeedback(null);
 
+      if (isVnpay) {
+        const { url } = await paymentApi.initVNPay(String(draft.orderId));
+        window.location.href = url;
+        return;
+      }
+
+      // Cash payment logic
       const payment = await paymentApi.create({
         order_id: draft.orderId,
         amount: draft.finalAmount,
@@ -382,16 +443,12 @@ const BillingPage: React.FC = () => {
         transaction_id: undefined,
       });
 
-      if (!isVnpay) {
-        await updateOrderPaidStatus(String(draft.orderId));
-      }
+      await updateOrderPaidStatus(String(draft.orderId));
 
       setPaymentCompleted(true);
       setFeedbackType('success');
       setFeedback(
-        isVnpay
-          ? `Đã tạo payment VNPay ở trạng thái PENDING. Payment ID: ${String(payment.id)}. Cần endpoint init/callback từ backend để hoàn tất giao dịch.`
-          : `Thanh toán thành công. Payment ID: ${String(payment.id)}. Order đã được cập nhật sang trạng thái PAID.`,
+        `Thanh toán thành công. Payment ID: ${String(payment.id)}. Order đã được cập nhật sang trạng thái COMPLETED.`,
       );
       await loadRevenueStats();
     } catch (error) {
@@ -401,7 +458,7 @@ const BillingPage: React.FC = () => {
       setFeedback(
         apiMessage
           ? `Không thể xử lý thanh toán: ${apiMessage}`
-          : 'Không thể xử lý thanh toán. Vui lòng kiểm tra token, trạng thái order và API payment.',
+          : 'Không thể xử lý thanh toán. Vui lòng kiểm tra kết nối API.',
       );
     } finally {
       setSubmitting(false);
@@ -429,11 +486,11 @@ const BillingPage: React.FC = () => {
               </p>
             </div>
             <div className="flex gap-3">
-              {selectedTable ? (
+              {(draft.tableNumber || selectedTable) ? (
                 <div className="flex items-center gap-3 rounded-xl bg-[#f3f4f5] px-4 py-2">
                   <span className="h-3 w-3 rounded-full bg-[#ac3509]" />
                   <span className="text-sm font-bold uppercase tracking-wider text-[#59413a]">
-                    Bàn: {selectedTable.table_number || selectedTable.id}
+                    Bàn: {draft.tableNumber || selectedTable?.table_number || selectedTable?.id}
                   </span>
                 </div>
               ) : null}
@@ -456,7 +513,16 @@ const BillingPage: React.FC = () => {
                 </h3>
 
                 <div className="space-y-4">
-                  {draft.items.length === 0 ? (
+                  {billLoading ? (
+                    <div className="flex min-h-[160px] flex-col items-center justify-center gap-3 text-[#59413a]">
+                      <Loader2 size={24} className="animate-spin text-[#ac3509]" />
+                      <p className="text-sm">Đang tải chi tiết hóa đơn...</p>
+                    </div>
+                  ) : billError ? (
+                    <div className="rounded-2xl border border-red-100 bg-red-50 p-6 text-center text-red-700">
+                      {billError}
+                    </div>
+                  ) : draft.items.length === 0 ? (
                     <div className="rounded-2xl border border-dashed border-[#e0bfb6] bg-[#f8f9fa] p-8 text-center text-[#59413a]">
                       Chưa có dữ liệu đơn hàng để thanh toán.
                     </div>
@@ -531,11 +597,10 @@ const BillingPage: React.FC = () => {
                       <button
                         key={method.id}
                         onClick={() => setSelectedMethod(method.id)}
-                        className={`relative flex flex-col items-center justify-center gap-3 rounded-2xl p-6 transition-all duration-300 ${
-                          selected
-                            ? 'bg-white shadow-md ring-2 ring-[#ac3509]'
-                            : 'bg-white shadow-sm hover:translate-x-1'
-                        }`}
+                        className={`relative flex flex-col items-center justify-center gap-3 rounded-2xl p-6 transition-all duration-300 ${selected
+                          ? 'bg-white shadow-md ring-2 ring-[#ac3509]'
+                          : 'bg-white shadow-sm hover:translate-x-1'
+                          }`}
                       >
                         {selected ? (
                           <div className="absolute right-3 top-3 flex h-5 w-5 items-center justify-center rounded-full bg-[#ac3509]">
@@ -558,38 +623,27 @@ const BillingPage: React.FC = () => {
                       Trạng thái gửi payment
                     </span>
                     <span
-                      className={`rounded-full px-3 py-1 text-xs font-black uppercase tracking-wider ${
-                        effectiveStatus === 'SUCCESS'
-                          ? 'bg-emerald-100 text-emerald-700'
-                          : 'bg-amber-100 text-amber-700'
-                      }`}
+                      className={`rounded-full px-3 py-1 text-xs font-black uppercase tracking-wider ${effectiveStatus === 'SUCCESS'
+                        ? 'bg-emerald-100 text-emerald-700'
+                        : 'bg-amber-100 text-amber-700'
+                        }`}
                     >
                       {effectiveStatus}
                     </span>
                   </div>
                   <p className="mt-2 text-sm text-[#59413a]">
                     {isVnpay
-                      ? 'VNPay hiện được tạo ở trạng thái PENDING để chờ callback xác nhận từ backend.'
+                      ? 'Chọn xác nhận để chuyển hướng tới cổng thanh toán VNPay.'
                       : 'Tiền mặt được chốt SUCCESS ngay khi staff xác nhận thanh toán.'}
                   </p>
                 </div>
 
-                {isVnpay ? (
-                  <div className="mt-4 rounded-2xl bg-sky-50 px-4 py-3 text-sm font-medium text-sky-800">
-                    VNPay hiện mới được hỗ trợ ở mức tạo record payment với trạng thái
-                    {' '}<code>PENDING</code>. Backend cần bổ sung{' '}
-                    <code>/payments/vnpay/init</code> và{' '}
-                    <code>/payments/vnpay/callback</code> để redirect sang VNPay và cập nhật kết quả giao dịch.
-                  </div>
-                ) : null}
-
                 {feedback ? (
                   <div
-                    className={`mt-4 rounded-2xl px-4 py-3 text-sm font-medium ${
-                      feedbackType === 'success'
-                        ? 'bg-emerald-50 text-emerald-700'
-                        : 'bg-red-50 text-red-700'
-                    }`}
+                    className={`mt-4 rounded-2xl px-4 py-3 text-sm font-medium ${feedbackType === 'success'
+                      ? 'bg-emerald-50 text-emerald-700'
+                      : 'bg-red-50 text-red-700'
+                      }`}
                   >
                     {feedback}
                   </div>
@@ -685,9 +739,8 @@ const BillingPage: React.FC = () => {
                           {formatCurrency(stats.totalRevenue)}
                         </p>
                         <div
-                          className={`mt-4 flex items-center gap-2 text-xs font-bold ${
-                            stats.trendPercent >= 0 ? 'text-emerald-400' : 'text-red-400'
-                          }`}
+                          className={`mt-4 flex items-center gap-2 text-xs font-bold ${stats.trendPercent >= 0 ? 'text-emerald-400' : 'text-red-400'
+                            }`}
                         >
                           <TrendingUp size={16} />
                           {stats.trendPercent >= 0 ? '+' : ''}

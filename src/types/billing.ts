@@ -15,4 +15,5 @@ export interface BillingDraft {
   discountAmount: number;
   finalAmount: number;
   vat: number;
+  tableNumber?: string;
 }

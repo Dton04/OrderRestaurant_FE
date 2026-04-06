@@ -3,6 +3,7 @@ import { Search, Bell, User, CheckCircle2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import orderApi from '../../api/order';
 import type { KitchenQueueItem } from '../../api/order';
+import { useSocket } from '../../context/SocketContext';
 
 type QueueOrderItem = {
   item_id: string | number;
@@ -32,6 +33,8 @@ const ChefDashboardPage: React.FC = () => {
     setQueueItems(items);
   }, []);
 
+  const { socket } = useSocket();
+
   useEffect(() => {
     const run = async () => {
       try {
@@ -47,11 +50,15 @@ const ChefDashboardPage: React.FC = () => {
   }, [reloadQueue]);
 
   useEffect(() => {
-    const intervalId = window.setInterval(() => {
-      void reloadQueue();
-    }, 3000);
-    return () => window.clearInterval(intervalId);
-  }, [reloadQueue]);
+    if (socket) {
+      socket.on('refresh_orders', reloadQueue);
+    }
+    return () => {
+      if (socket) {
+        socket.off('refresh_orders', reloadQueue);
+      }
+    };
+  }, [socket, reloadQueue]);
 
   useEffect(() => {
     const waiting = queueItems.filter((i) => i.status === 'PENDING').length;
